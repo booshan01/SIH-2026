@@ -1,0 +1,6 @@
+{
+  "name": "SAIMS — Smart AI Monitoring System",
+  "description": "AI-Based Real-Time Training Centre Monitoring and Infrastructure Compliance System for the Ministry of Skill Development and Entrepreneurship (MSDE), Government of India.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
