@@ -1,6 +1,6 @@
 export type UserRole = 'State Officer' | 'System Administrator' | 'Monitoring Officer' | 'Centre Manager';
 
-export type AuthProvider = 'gmail' | 'password' | 'demo' | 'parichay';
+export type AuthProvider = 'gmail' | 'microsoft' | 'password' | 'demo' | 'parichay';
 
 export interface User {
   id: string;
@@ -61,6 +61,22 @@ export interface TrainingCentre {
   updatedAt: string;
 }
 
+export interface PinpointTarget {
+  id?: string;
+  name: string;
+  category: 'tool' | 'student' | 'facility' | 'safety' | 'machinery' | 'electronics' | 'infrastructure';
+  x: number; // percentage (0 - 100)
+  y: number; // percentage (0 - 100)
+  status?: string;
+  assignedTo?: string;
+  camId?: string;
+  note?: string;
+  confidence?: number;
+  width?: number; // percentage
+  height?: number; // percentage
+  timestamp?: string;
+}
+
 export type RoomType = 
   | 'computer_lab' 
   | 'vocational_workshop' 
@@ -91,6 +107,7 @@ export interface Camera {
   status: CameraStatus;
   rtspUrl?: string;
   videoUrl?: string; // High-definition sample CCTV stream MP4/WebM
+  imageUrl?: string; // Authentic CCTV surveillance snapshot image
   sampleVideoType?: string;
   resolution: string;
   fps: number;
@@ -318,7 +335,7 @@ export interface SystemSettings {
   general: {
     appName: string;
     organization: string;
-    theme: 'system' | 'light';
+    theme: 'system' | 'light' | 'dark';
     language: string;
     dateFormat: string;
     timeZone: string;

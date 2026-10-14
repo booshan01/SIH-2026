@@ -38,6 +38,8 @@ import {
 } from 'lucide-react';
 import { Camera, Student, ClassroomChecklistItem } from '../../types';
 import { formatDateTime, exportToCSV } from '../../utils/complianceEngine';
+import { PrecisionCameraViewer } from './PrecisionCameraViewer';
+import { useLiveCctvClock } from '../../utils/useLiveCctvClock';
 
 const SAMPLE_CCTV_PRESETS = [
   {
@@ -121,7 +123,7 @@ export const LiveMonitoringPage: React.FC = () => {
   const [webcamError, setWebcamError] = useState<string | null>(null);
   const [showBoundingBoxes, setShowBoundingBoxes] = useState(true);
   const [activeTab, setActiveTab] = useState<'stream' | 'student_attendance' | 'check_things'>('stream');
-  const [streamViewMode, setStreamViewMode] = useState<'single' | 'quad_grid'>('single');
+  const [streamViewMode, setStreamViewMode] = useState<'single' | 'quad_grid' | 'grid_9' | 'all_cameras'>('single');
   
   // Video playback controls
   const [isMuted, setIsMuted] = useState(true);
@@ -152,6 +154,9 @@ export const LiveMonitoringPage: React.FC = () => {
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const sampleVideoRef = useRef<HTMLVideoElement | null>(null);
+
+  // Exact real-time CCTV clock running by current user computer time
+  const cctvClock = useLiveCctvClock(1000);
 
   const activeCamera = cameras.find(c => c.id === selectedCameraId) || availableCameras[0] || cameras[0];
   const activeCentre = centres.find(c => c.id === activeCamera?.centreId);
@@ -248,7 +253,7 @@ export const LiveMonitoringPage: React.FC = () => {
     }
   };
 
-  // Student Attendance Scan
+  // Student Attendance Scan - Ultra-fast responsive
   const handleAutoScan = () => {
     setIsScanning(true);
     setTimeout(() => {
@@ -257,8 +262,8 @@ export const LiveMonitoringPage: React.FC = () => {
       setLivePeopleCount(visualCount);
       setIsScanning(false);
       setKioskSuccessMsg(`Autonomous Edge AI Scan Completed: ${visualCount} trainees identified & attendance register synced!`);
-      setTimeout(() => setKioskSuccessMsg(null), 4000);
-    }, 1300);
+      setTimeout(() => setKioskSuccessMsg(null), 3000);
+    }, 150);
   };
 
   // Student Self Check-In via Roll Number
@@ -316,7 +321,7 @@ export const LiveMonitoringPage: React.FC = () => {
     setTimeout(() => setKioskSuccessMsg(null), 4000);
   };
 
-  // AI Inspect Things
+  // AI Inspect Things - Ultra-fast responsive
   const handleAiInspectThings = () => {
     setIsInspectingThings(true);
     setTimeout(() => {
@@ -325,8 +330,8 @@ export const LiveMonitoringPage: React.FC = () => {
       });
       setIsInspectingThings(false);
       setKioskSuccessMsg('AI Edge Audit Completed: All classroom assets verified in compliant state!');
-      setTimeout(() => setKioskSuccessMsg(null), 4000);
-    }, 1200);
+      setTimeout(() => setKioskSuccessMsg(null), 3000);
+    }, 150);
   };
 
   // Export Attendance Sheet CSV
@@ -521,39 +526,61 @@ export const LiveMonitoringPage: React.FC = () => {
           {/* Stream Toolbar with Grid View Toggle & Source Selectors */}
           <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-xs flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-semibold text-slate-700">Display:</span>
+              <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Display:</span>
               <button
                 onClick={() => setStreamViewMode('single')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 border transition-colors ${
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 border transition-colors cursor-pointer ${
                   streamViewMode === 'single'
                     ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                    : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
                 }`}
               >
                 <Maximize2 className="w-3.5 h-3.5" />
-                <span>Single Camera Focus</span>
+                <span>Single Focus</span>
               </button>
               <button
                 onClick={() => setStreamViewMode('quad_grid')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 border transition-colors ${
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 border transition-colors cursor-pointer ${
                   streamViewMode === 'quad_grid'
                     ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                    : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
                 }`}
               >
                 <LayoutGrid className="w-3.5 h-3.5" />
-                <span>4-Screen Multi-CCTV Grid</span>
+                <span>4-Grid</span>
+              </button>
+              <button
+                onClick={() => setStreamViewMode('grid_9')}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 border transition-colors cursor-pointer ${
+                  streamViewMode === 'grid_9'
+                    ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                    : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
+                }`}
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+                <span>9-Matrix</span>
+              </button>
+              <button
+                onClick={() => setStreamViewMode('all_cameras')}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 border transition-colors cursor-pointer ${
+                  streamViewMode === 'all_cameras'
+                    ? 'bg-blue-600 text-white border-blue-600 shadow-xs ring-2 ring-blue-500/30'
+                    : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5 text-cyan-400" />
+                <span>All 18 Feeds ({availableCameras.length})</span>
               </button>
             </div>
 
             {/* Video Source Switcher */}
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-semibold text-slate-700">Stream Mode:</span>
-              <div className="inline-flex rounded-lg border border-slate-200 p-0.5 bg-slate-50 text-xs">
+              <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Stream Mode:</span>
+              <div className="inline-flex rounded-lg border border-slate-200 dark:border-slate-700 p-0.5 bg-slate-50 dark:bg-slate-800 text-xs">
                 <button
                   onClick={() => setStreamSourceMode('sample_video')}
-                  className={`px-2.5 py-1 rounded-md font-medium flex items-center gap-1 transition-colors ${
-                    streamSourceMode === 'sample_video' ? 'bg-white shadow-xs text-blue-700 font-bold' : 'text-slate-600'
+                  className={`px-2.5 py-1 rounded-md font-medium flex items-center gap-1 transition-colors cursor-pointer ${
+                    streamSourceMode === 'sample_video' ? 'bg-white dark:bg-slate-700 shadow-xs text-blue-700 dark:text-cyan-300 font-bold' : 'text-slate-600 dark:text-slate-400'
                   }`}
                 >
                   <Film className="w-3 h-3 text-blue-600" />
@@ -561,8 +588,8 @@ export const LiveMonitoringPage: React.FC = () => {
                 </button>
                 <button
                   onClick={() => setStreamSourceMode('webcam')}
-                  className={`px-2.5 py-1 rounded-md font-medium flex items-center gap-1 transition-colors ${
-                    streamSourceMode === 'webcam' ? 'bg-white shadow-xs text-blue-700 font-bold' : 'text-slate-600'
+                  className={`px-2.5 py-1 rounded-md font-medium flex items-center gap-1 transition-colors cursor-pointer ${
+                    streamSourceMode === 'webcam' ? 'bg-white dark:bg-slate-700 shadow-xs text-blue-700 dark:text-cyan-300 font-bold' : 'text-slate-600 dark:text-slate-400'
                   }`}
                 >
                   <CameraIcon className="w-3 h-3 text-emerald-600" />
@@ -570,8 +597,8 @@ export const LiveMonitoringPage: React.FC = () => {
                 </button>
                 <button
                   onClick={() => setStreamSourceMode('synthetic')}
-                  className={`px-2.5 py-1 rounded-md font-medium flex items-center gap-1 transition-colors ${
-                    streamSourceMode === 'synthetic' ? 'bg-white shadow-xs text-blue-700 font-bold' : 'text-slate-600'
+                  className={`px-2.5 py-1 rounded-md font-medium flex items-center gap-1 transition-colors cursor-pointer ${
+                    streamSourceMode === 'synthetic' ? 'bg-white dark:bg-slate-700 shadow-xs text-blue-700 dark:text-cyan-300 font-bold' : 'text-slate-600 dark:text-slate-400'
                   }`}
                 >
                   <Cpu className="w-3 h-3 text-amber-600" />
@@ -582,7 +609,7 @@ export const LiveMonitoringPage: React.FC = () => {
               <button
                 onClick={handleAutoScan}
                 disabled={isScanning}
-                className="px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                className="px-3 py-1.5 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-cyan-300 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 <Eye className="w-3.5 h-3.5" />
                 <span>{isScanning ? 'Scanning...' : 'Take Live Attendance From Camera'}</span>
@@ -590,10 +617,21 @@ export const LiveMonitoringPage: React.FC = () => {
             </div>
           </div>
 
-          {/* QUAD GRID MODE: 4 LIVE CCTV CAMERAS SIMULTANEOUSLY PLAYING REAL VIDEOS */}
-          {streamViewMode === 'quad_grid' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {availableCameras.slice(0, 4).map((cam, idx) => {
+          {/* MULTI-CCTV GRID MODES (QUAD, 9-MATRIX, OR ALL 18 CAMERAS SIMULTANEOUSLY) */}
+          {streamViewMode !== 'single' ? (
+            <div className={`grid gap-3 ${
+              streamViewMode === 'quad_grid'
+                ? 'grid-cols-1 md:grid-cols-2'
+                : streamViewMode === 'grid_9'
+                ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
+                : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6'
+            }`}>
+              {(streamViewMode === 'quad_grid'
+                ? availableCameras.slice(0, 4)
+                : streamViewMode === 'grid_9'
+                ? availableCameras.slice(0, 9)
+                : availableCameras
+              ).map((cam, idx) => {
                 const room = classrooms.find(r => r.id === cam.classroomId);
                 const centre = centres.find(c => c.id === cam.centreId);
                 const isSelected = cam.id === activeCamera.id;
@@ -606,21 +644,21 @@ export const LiveMonitoringPage: React.FC = () => {
                       setSelectedCameraId(cam.id);
                       setStreamViewMode('single');
                     }}
-                    className={`bg-slate-900 border rounded-xl p-3 text-white cursor-pointer transition-all hover:border-blue-400 group relative ${
+                    className={`bg-slate-900 border rounded-xl p-2.5 text-white cursor-pointer transition-all hover:border-blue-400 group relative flex flex-col justify-between ${
                       isSelected ? 'border-blue-500 ring-2 ring-blue-500/40' : 'border-slate-800'
                     }`}
                   >
-                    <div className="flex items-center justify-between pb-2 border-b border-slate-800 text-xs">
-                      <div className="flex items-center gap-2">
-                        <span className={`w-2 h-2 rounded-full ${cam.status === 'connected' ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
-                        <span className="font-bold text-white text-xs">{cam.name}</span>
+                    <div className="flex items-center justify-between pb-1.5 border-b border-slate-800 text-xs">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className={`w-2 h-2 rounded-full shrink-0 ${cam.status === 'connected' ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
+                        <span className="font-bold text-white text-[11px] truncate">{cam.name}</span>
                       </div>
-                      <span className="text-[10px] font-mono text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded">
-                        {cam.status === 'connected' ? `${cam.fps} FPS · ${cam.resolution}` : 'OFFLINE'}
+                      <span className="text-[9px] font-mono text-slate-400 bg-slate-800 px-1 py-0.2 rounded shrink-0">
+                        {cam.status === 'connected' ? `${cam.fps} FPS` : 'OFFLINE'}
                       </span>
                     </div>
 
-                    <div className="aspect-video bg-slate-950 rounded-lg my-2 border border-slate-800 flex items-center justify-center relative overflow-hidden">
+                    <div className="aspect-video bg-slate-950 rounded-lg my-1.5 border border-slate-800 flex items-center justify-center relative overflow-hidden">
                       {cam.status === 'connected' ? (
                         <>
                           {/* Real Playable HTML5 Video Loop */}
@@ -634,331 +672,42 @@ export const LiveMonitoringPage: React.FC = () => {
                           />
 
                           {/* CCTV Security HUD Overlay */}
-                          <div className="absolute inset-0 p-2.5 flex flex-col justify-between pointer-events-none select-none bg-gradient-to-b from-slate-950/70 via-transparent to-slate-950/70 font-mono text-[10px]">
+                          <div className="absolute inset-0 p-2 flex flex-col justify-between pointer-events-none select-none bg-gradient-to-b from-slate-950/70 via-transparent to-slate-950/70 font-mono text-[9px]">
                             <div className="flex justify-between items-center text-slate-300">
-                              <span className="bg-red-600/90 text-white text-[9px] px-1.5 py-0.5 rounded font-bold flex items-center gap-1">
+                              <span className="bg-red-600/90 text-white text-[8px] px-1 py-0.2 rounded font-bold flex items-center gap-1">
                                 <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
-                                LIVE CAM #{idx + 1}
+                                CAM #{idx + 1}
                               </span>
-                              <span>{new Date().toLocaleTimeString()} IST</span>
+                              <span>{cctvClock.timeString}</span>
                             </div>
 
-                            <div className="flex justify-between items-center text-[9px] text-slate-300">
-                              <span className="truncate max-w-[160px]">{centre?.name}</span>
-                              <span className="text-emerald-400 font-bold bg-slate-900/80 px-1.5 py-0.5 rounded">
-                                CLICK TO MAXIMIZE ↗
+                            <div className="flex justify-between items-center text-[8px] text-slate-300">
+                              <span className="truncate max-w-[120px]">{centre?.name}</span>
+                              <span className="text-emerald-400 font-bold bg-slate-900/90 px-1 py-0.2 rounded border border-emerald-500/30">
+                                PINPOINTS ↗
                               </span>
                             </div>
                           </div>
                         </>
                       ) : (
-                        <div className="text-center p-4 text-xs text-red-400 font-mono">
-                          CAMERA STREAM DISCONNECTED
+                        <div className="text-center p-3 text-xs text-red-400 font-mono">
+                          SIGNAL LOST
                         </div>
                       )}
                     </div>
 
-                    <div className="text-[11px] text-slate-400 flex items-center justify-between pt-1">
-                      <span>Room: {room?.name || 'Main Hall'}</span>
-                      <span className="text-blue-400 font-semibold text-[10px]">Coverage: {cam.coveragePercentage}%</span>
+                    <div className="text-[10px] text-slate-400 flex items-center justify-between pt-1 font-mono">
+                      <span className="truncate max-w-[130px]">{room?.name || 'Surveillance Bay'}</span>
+                      <span className="text-cyan-400 font-semibold">{cam.resolution}</span>
                     </div>
                   </div>
                 );
               })}
             </div>
           ) : (
-            /* SINGLE STREAM PLAYER MODE */
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Video Feed & Canvas */}
-              <div className="lg:col-span-2 space-y-4">
-                <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 text-white shadow-md relative overflow-hidden">
-                  
-                  {/* Scanning Beam Animation when scanning */}
-                  {isScanning && (
-                    <div className="absolute inset-0 bg-blue-500/10 pointer-events-none z-30 flex flex-col justify-start">
-                      <div className="w-full h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_15px_#22d3ee] animate-bounce" />
-                    </div>
-                  )}
-
-                  {/* Camera Header */}
-                  <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-                    <div className="flex items-center gap-2.5">
-                      <span className={`w-2.5 h-2.5 rounded-full ${activeCamera?.status === 'connected' ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
-                      <div>
-                        <div className="font-semibold text-xs text-white">
-                          {activeCamera?.name}
-                        </div>
-                        <div className="text-[10px] text-slate-400 font-mono">
-                          {activeCentre?.name} · {activeRoom?.name}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 text-xs font-mono text-slate-400">
-                      <button
-                        onClick={() => setShowBoundingBoxes(!showBoundingBoxes)}
-                        className={`px-2 py-0.5 rounded text-[10px] border transition-colors ${
-                          showBoundingBoxes ? 'bg-blue-600 text-white border-blue-500' : 'bg-slate-800 text-slate-400 border-slate-700'
-                        }`}
-                      >
-                        AI Boxes: {showBoundingBoxes ? 'ON' : 'OFF'}
-                      </button>
-                      <span>FPS: {activeCamera?.status === 'connected' ? activeCamera.fps : 0}</span>
-                      <span>Lat: {activeCamera?.status === 'connected' ? `${liveLatency}ms` : '--'}</span>
-                      <span className="text-emerald-400 font-semibold uppercase">{activeCamera?.streamType}</span>
-                    </div>
-                  </div>
-
-                  {/* Video Canvas Container */}
-                  <div className="relative aspect-video bg-slate-950 rounded-lg overflow-hidden my-3 border border-slate-800 flex items-center justify-center">
-                    {streamSourceMode === 'webcam' ? (
-                      /* Real browser webcam stream */
-                      <video
-                        ref={videoRef}
-                        autoPlay
-                        playsInline
-                        muted
-                        className="w-full h-full object-cover"
-                      />
-                    ) : streamSourceMode === 'sample_video' && activeCamera?.status === 'connected' ? (
-                      /* Real Working HTML5 Sample CCTV Video Stream */
-                      <div className="relative w-full h-full overflow-hidden">
-                        <video
-                          ref={sampleVideoRef}
-                          src={currentVideoUrl}
-                          autoPlay
-                          loop
-                          muted={isMuted}
-                          playsInline
-                          className="w-full h-full object-cover"
-                        />
-
-                        {/* Top CCTV HUD Overlay */}
-                        <div className="absolute top-0 inset-x-0 p-3 bg-gradient-to-b from-slate-950/80 to-transparent flex items-center justify-between text-[11px] font-mono text-slate-300 z-20 pointer-events-none">
-                          <div className="flex items-center gap-2">
-                            <span className="px-1.5 py-0.5 rounded bg-red-600/95 text-white font-bold text-[9px] flex items-center gap-1 shadow-xs">
-                              <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
-                              REC · LIVE CCTV
-                            </span>
-                            <span className="text-[10px] text-slate-300">{activeCamera?.rtspUrl}</span>
-                          </div>
-                          <span>{new Date().toLocaleTimeString()} IST</span>
-                        </div>
-
-                        {/* Real-Time AI Detection Bounding Boxes Overlay */}
-                        {showBoundingBoxes && (
-                          <div className="absolute inset-0 pointer-events-none z-10">
-                            <div className="absolute top-[22%] left-[10%] w-[18%] h-[40%] border-2 border-emerald-400 rounded bg-emerald-500/10">
-                              <span className="absolute -top-4 left-0 bg-emerald-600 text-white text-[9px] font-mono px-1 rounded-xs">
-                                Trainee: Booshan (98%)
-                              </span>
-                            </div>
-                            <div className="absolute top-[22%] left-[34%] w-[18%] h-[40%] border-2 border-emerald-400 rounded bg-emerald-500/10">
-                              <span className="absolute -top-4 left-0 bg-emerald-600 text-white text-[9px] font-mono px-1 rounded-xs">
-                                Trainee: Priya (94%)
-                              </span>
-                            </div>
-                            <div className="absolute top-[22%] left-[58%] w-[18%] h-[40%] border-2 border-emerald-400 rounded bg-emerald-500/10">
-                              <span className="absolute -top-4 left-0 bg-emerald-600 text-white text-[9px] font-mono px-1 rounded-xs">
-                                Trainee: Karthik (91%)
-                              </span>
-                            </div>
-                            <div className="absolute bottom-[8%] left-[12%] w-[22%] h-[24%] border-2 border-blue-400 rounded bg-blue-500/10">
-                              <span className="absolute -top-4 left-0 bg-blue-600 text-white text-[9px] font-mono px-1 rounded-xs">
-                                Active Terminal (99%)
-                              </span>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Bottom CCTV HUD Overlay */}
-                        <div className="absolute bottom-0 inset-x-0 p-3 bg-gradient-to-t from-slate-950/80 to-transparent flex items-center justify-between text-[11px] font-mono text-slate-300 z-20 pointer-events-none">
-                          <span className="text-amber-300 flex items-center gap-1.5 text-[10px]">
-                            <Sparkles className="w-3 h-3 text-amber-400" />
-                            AI DETECTIONS: {livePeopleCount} Trainees Present · 100% Attendance Verified
-                          </span>
-                          <span className="text-[10px] text-slate-400">FPS: 25.0 · H.264 HD</span>
-                        </div>
-                      </div>
-                    ) : activeCamera?.status === 'connected' ? (
-                      /* Synthetic Topology Mode */
-                      <div className="relative w-full h-full flex flex-col justify-between p-5 bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 overflow-hidden select-none">
-                        <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 z-10">
-                          <span className="bg-blue-600 text-white text-[9px] px-1.5 py-0.5 rounded font-bold">TOPOLOGY SIMULATION</span>
-                          <span>{new Date().toLocaleTimeString()} IST</span>
-                        </div>
-                        <div className="grid grid-cols-5 gap-3 w-full my-auto opacity-80">
-                          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(seat => (
-                            <div key={seat} className="border border-blue-500/40 bg-blue-950/20 rounded p-2 text-center text-[10px]">
-                              <span className="text-blue-300 font-mono">Desk #{seat}</span>
-                              <div className="text-emerald-400 font-bold mt-1">👤 Active</div>
-                            </div>
-                          ))}
-                        </div>
-                        <div className="text-[10px] text-slate-400 font-mono">
-                          Topology grid synchronized with edge gateway
-                        </div>
-                      </div>
-                    ) : (
-                      /* Offline State */
-                      <div className="text-center p-8 space-y-3">
-                        <WifiOff className="w-12 h-12 text-red-500 mx-auto" />
-                        <div className="font-bold text-sm text-white">CCTV FEED DISCONNECTED</div>
-                        <p className="text-xs text-slate-400 max-w-sm">
-                          Network timeout: RTSP handshake lost at {activeCamera?.rtspUrl}.
-                        </p>
-                        <button
-                          onClick={handleReconnect}
-                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold"
-                        >
-                          Attempt Stream Reconnection
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* CCTV Video Player Interactive Controls Bar */}
-                  <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800 text-xs">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setIsPaused(!isPaused)}
-                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors"
-                        title={isPaused ? 'Resume video stream' : 'Pause video stream'}
-                      >
-                        {isPaused ? <Play className="w-3.5 h-3.5 text-emerald-400" /> : <Pause className="w-3.5 h-3.5 text-amber-400" />}
-                        <span>{isPaused ? 'Resume' : 'Pause'}</span>
-                      </button>
-
-                      <button
-                        onClick={() => handleSeek(-10)}
-                        className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors"
-                        title="Rewind 10 seconds"
-                      >
-                        <Rewind className="w-3.5 h-3.5" />
-                      </button>
-
-                      <button
-                        onClick={() => handleSeek(10)}
-                        className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors"
-                        title="Forward 10 seconds"
-                      >
-                        <FastForward className="w-3.5 h-3.5" />
-                      </button>
-
-                      <button
-                        onClick={() => setIsMuted(!isMuted)}
-                        className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs flex items-center gap-1 transition-colors"
-                        title={isMuted ? 'Unmute stream' : 'Mute stream'}
-                      >
-                        {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5 text-emerald-400" />}
-                        <span>{isMuted ? 'Muted' : 'Audio ON'}</span>
-                      </button>
-                    </div>
-
-                    {/* Preset Clip Selector */}
-                    <div className="flex items-center gap-2">
-                      <span className="text-[11px] text-slate-400">Sample Clip:</span>
-                      <select
-                        value={selectedSampleUrl}
-                        onChange={(e) => setSelectedSampleUrl(e.target.value)}
-                        className="bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg px-2 py-1 max-w-[200px]"
-                      >
-                        <option value="">Default Camera Feed</option>
-                        {SAMPLE_CCTV_PRESETS.map(preset => (
-                          <option key={preset.id} value={preset.url}>
-                            {preset.name}
-                          </option>
-                        ))}
-                      </select>
-
-                      <button
-                        onClick={activeCamera?.status === 'connected' ? handleDisconnect : handleReconnect}
-                        className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs flex items-center gap-1 transition-colors"
-                        title="Simulate signal disruption (restricted for Monitoring Officers)"
-                      >
-                        <RotateCcw className="w-3 h-3" />
-                        <span>{activeCamera?.status === 'connected' ? 'Cut Stream' : 'Reconnect'}</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Quick Live Telemetry Cards */}
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
-                    <div className="text-xs font-medium text-slate-500">Live People Count</div>
-                    <div className="text-2xl font-bold text-blue-700 mt-1">
-                      {activeCamera?.status === 'connected' ? livePeopleCount : 0}
-                    </div>
-                    <div className="text-[10px] text-slate-400 mt-0.5">Anonymous edge detection</div>
-                  </div>
-
-                  <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
-                    <div className="text-xs font-medium text-slate-500">Camera Coverage</div>
-                    <div className="text-2xl font-bold text-emerald-700 mt-1">
-                      {activeCamera?.coveragePercentage}%
-                    </div>
-                    <div className="text-[10px] text-slate-400 mt-0.5">Floor pan & tilt angle</div>
-                  </div>
-
-                  <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
-                    <div className="text-xs font-medium text-slate-500">Stream Health</div>
-                    <div className={`text-2xl font-bold mt-1 ${activeCamera?.status === 'connected' ? 'text-emerald-700' : 'text-red-600'}`}>
-                      {activeCamera?.status === 'connected' ? 'Broadband HD' : 'Offline'}
-                    </div>
-                    <div className="text-[10px] text-slate-400 mt-0.5">H.264 bitstream connected</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Column: Multi-Camera Feed Selector */}
-              <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                  <div>
-                    <h3 className="font-bold text-sm text-slate-900">Live CCTV Camera Feeds</h3>
-                    <p className="text-xs text-slate-500">
-                      {isCentreManager ? 'Scoped to your centre' : `${availableCameras.length} active CCTV nodes across centres`}
-                    </p>
-                  </div>
-                  <span className="text-xs font-mono text-slate-400">{availableCameras.length} nodes</span>
-                </div>
-
-                <div className="space-y-2 max-h-[500px] overflow-y-auto">
-                  {availableCameras.map((cam) => {
-                    const isSelected = cam.id === activeCamera?.id;
-                    const room = classrooms.find(r => r.id === cam.classroomId);
-                    const centre = centres.find(c => c.id === cam.centreId);
-
-                    return (
-                      <div
-                        key={cam.id}
-                        onClick={() => {
-                          setSelectedCameraId(cam.id);
-                          setSelectedSampleUrl(''); // reset custom clip to use camera's native video
-                        }}
-                        className={`p-3 rounded-lg border text-xs cursor-pointer transition-all ${
-                          isSelected
-                            ? 'border-blue-600 bg-blue-50/70 shadow-xs'
-                            : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <span className={`w-2 h-2 rounded-full ${cam.status === 'connected' ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                            <span className="font-bold text-slate-800">{cam.name}</span>
-                          </div>
-                          <span className="font-mono text-[10px] text-slate-400">{cam.resolution}</span>
-                        </div>
-
-                        <div className="flex items-center justify-between text-[11px] text-slate-500 mt-1">
-                          <span>{centre?.name} · {room?.name || 'Classroom'}</span>
-                          <span className="text-blue-600 font-semibold">{cam.fps} FPS</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+            /* SINGLE STREAM PLAYER MODE - Precision Calibrated CCTV Viewer */
+            <div className="space-y-4">
+              <PrecisionCameraViewer />
             </div>
           )}
         </div>

@@ -19,11 +19,19 @@ import {
   ShieldAlert,
   Sparkles,
   Wifi,
-  ExternalLink
+  ExternalLink,
+  Trophy,
+  Camera,
+  Crosshair
 } from 'lucide-react';
 import { formatDateTime } from '../../utils/complianceEngine';
+import cctvFactoryImg from '../../assets/images/cctv_factory_workshop_1791819809488.jpg';
+import cctvClassroomImg from '../../assets/images/cctv_classroom_attendance_1791819789935.jpg';
+import { useLiveCctvClock } from '../../utils/useLiveCctvClock';
+import { TAMIL_NADU_DISTRICTS, INDIAN_STATES } from '../../utils/placesData';
 
 export const OverviewDashboard: React.FC = () => {
+  const cctvClock = useLiveCctvClock(1000);
   const {
     centres,
     cameras,
@@ -39,7 +47,9 @@ export const OverviewDashboard: React.FC = () => {
     addInventoryItem,
     classrooms,
     currentUser,
-    settings
+    settings,
+    setGeminiAssistantOpen,
+    triggerPinpoint
   } = useApp();
 
   // Filters
@@ -54,6 +64,7 @@ export const OverviewDashboard: React.FC = () => {
   // New Centre Form State
   const [newCentreCode, setNewCentreCode] = useState('TN-SLM-0518');
   const [newCentreName, setNewCentreName] = useState('Salem Skill Development Academy');
+  const [newCentreState, setNewCentreState] = useState('Tamil Nadu');
   const [newCentreDistrict, setNewCentreDistrict] = useState('Salem');
   const [newCentreAddress, setNewCentreAddress] = useState('14, Meyyanur Main Road, Salem, Tamil Nadu');
   const [newCentreManager, setNewCentreManager] = useState('K. R. Vasanth');
@@ -111,7 +122,7 @@ export const OverviewDashboard: React.FC = () => {
     addCentre({
       code: newCentreCode,
       name: newCentreName,
-      state: 'Tamil Nadu',
+      state: newCentreState,
       district: newCentreDistrict,
       address: newCentreAddress,
       managerName: newCentreManager,
@@ -150,60 +161,393 @@ export const OverviewDashboard: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Top Banner: Gov/MSDE Header & Quick Info */}
-      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-blue-700 font-mono">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-bold uppercase tracking-wider text-blue-700 dark:text-cyan-400 font-mono">
               Problem ID: 26245 · Smart Education
             </span>
-            <span className="text-slate-300">|</span>
-            <span className="text-xs text-slate-500">Ministry of Skill Development & Entrepreneurship</span>
+            <span className="text-slate-300 dark:text-slate-700">|</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400">Ministry of Skill Development & Entrepreneurship</span>
           </div>
-          <h1 className="text-xl font-bold text-slate-900 mt-1">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mt-1">
             SAIMS — Real-Time Training Centre Compliance Dashboard
           </h1>
-          <p className="text-xs text-slate-600 mt-0.5">
-            Autonomous vision inspection, attendance integrity verification, and infrastructure auditing.
+          <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
+            Autonomous vision inspection, attendance integrity verification, and infrastructure auditing across 18 live camera sections.
           </p>
         </div>
 
         {/* Quick Action Buttons */}
         <div className="flex flex-wrap items-center gap-2">
           <button
-            onClick={() => setActivePage('monitoring')}
-            className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition-colors shadow-xs"
+            onClick={() => setActivePage('jury-showcase')}
+            className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 rounded-lg text-xs font-bold transition-all shadow-xs ring-1 ring-amber-400/40 cursor-pointer"
           >
-            <Video className="w-3.5 h-3.5" />
-            Live CCTV Feeds (8)
+            <Trophy className="w-3.5 h-3.5 fill-current" />
+            Jury Showcase & Simulation Arena
           </button>
           <button
             onClick={() => setActivePage('monitoring')}
-            className="flex items-center gap-1.5 px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-lg text-xs font-semibold transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition-colors shadow-xs cursor-pointer"
           >
-            <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
+            <Video className="w-3.5 h-3.5" />
+            Live CCTV Feeds (18)
+          </button>
+          <button
+            onClick={() => setActivePage('monitoring')}
+            className="flex items-center gap-1.5 px-3 py-2 bg-emerald-50 dark:bg-emerald-950/80 hover:bg-emerald-100 dark:hover:bg-emerald-900/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
+          >
+            <UserCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
             Students Take Attendance
           </button>
           <button
-            onClick={() => setActivePage('monitoring')}
-            className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-xs font-medium border border-slate-300 transition-colors"
+            onClick={() => setActivePage('places')}
+            className="flex items-center gap-1.5 px-3 py-2 bg-blue-50 dark:bg-blue-950/80 hover:bg-blue-100 dark:hover:bg-blue-900/80 text-blue-800 dark:text-cyan-300 rounded-lg text-xs font-semibold border border-blue-200 dark:border-blue-800 transition-colors cursor-pointer"
           >
-            <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />
-            Check Classroom Things
+            <Building2 className="w-3.5 h-3.5 text-blue-600 dark:text-cyan-400" />
+            Places (38 TN Districts)
           </button>
           <button
             onClick={() => setActivePage('analysis')}
-            className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-xs font-medium border border-slate-300 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 bg-purple-50 dark:bg-purple-950/80 hover:bg-purple-100 dark:hover:bg-purple-900/80 text-purple-800 dark:text-purple-300 rounded-lg text-xs font-medium border border-purple-200 dark:border-purple-800 transition-colors cursor-pointer"
           >
-            <Upload className="w-3.5 h-3.5 text-purple-600" />
+            <Upload className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
             AI Video Audit
           </button>
           <button
             onClick={() => setShowAddCentreModal(true)}
-            className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-xs font-medium border border-slate-300 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-lg text-xs font-semibold border border-slate-300 dark:border-slate-700 transition-colors cursor-pointer"
           >
-            <PlusCircle className="w-3.5 h-3.5 text-slate-600" />
+            <PlusCircle className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
             Add Centre
           </button>
+        </div>
+      </div>
+
+      {/* Elite Gemini AI Copilot Hero Card */}
+      <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white border border-blue-800/40 rounded-2xl p-4 sm:p-5 shadow-lg relative overflow-hidden">
+        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="space-y-1.5 max-w-2xl">
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-blue-500/30 text-cyan-300 border border-blue-400/30">
+                ✨ GOOGLE GEMINI 3.8 FLASH
+              </span>
+              <span className="text-xs text-slate-300 font-medium flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block animate-pulse" />
+                Autonomous Surveillance Guardian
+              </span>
+            </div>
+            <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">
+              Zero-Knowledge AI Surveillance & Compliance Assistant
+            </h2>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              New to the system? You don't need any training or manual reading. Gemini AI monitors all 3 CCTV streams, tracks lab equipment, audits trainee attendance, and diagnoses compliance issues for you in real-time.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 shrink-0">
+            <button
+              onClick={() => setGeminiAssistantOpen(true)}
+              className="px-4 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 text-slate-950 shadow-md flex items-center gap-2 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+            >
+              <Sparkles className="w-4 h-4 text-slate-950" />
+              <span>Launch Gemini Copilot</span>
+              <span className="bg-slate-950/20 text-slate-950 px-1.5 py-0.2 rounded text-[10px] font-mono">
+                Ctrl+K
+              </span>
+            </button>
+
+            <button
+              onClick={() => {
+                triggerPinpoint({
+                  name: 'Soldering Station',
+                  category: 'tool',
+                  x: 79.4,
+                  y: 91.0,
+                  camId: 'cam-1',
+                  note: 'Workbench #4'
+                });
+              }}
+              className="px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <span>🎯 Locate Soldering Tool</span>
+            </button>
+          </div>
+        </div>
+
+        {/* 1-Click Quick Prompts Pill Row */}
+        <div className="relative z-10 mt-4 pt-3 border-t border-blue-900/40 flex flex-wrap items-center gap-2 text-xs">
+          <span className="text-[11px] text-slate-400 font-semibold">1-Click Zero-Knowledge Checks:</span>
+          <button
+            onClick={() => setGeminiAssistantOpen(true)}
+            className="px-2.5 py-1 rounded-lg bg-blue-900/40 hover:bg-blue-800/60 text-cyan-200 border border-blue-700/50 text-[11px] transition-colors cursor-pointer"
+          >
+            🟢 30-Second Centre Briefing
+          </button>
+          <button
+            onClick={() => setGeminiAssistantOpen(true)}
+            className="px-2.5 py-1 rounded-lg bg-blue-900/40 hover:bg-blue-800/60 text-cyan-200 border border-blue-700/50 text-[11px] transition-colors cursor-pointer"
+          >
+            👥 Who is Absent Today?
+          </button>
+          <button
+            onClick={() => setGeminiAssistantOpen(true)}
+            className="px-2.5 py-1 rounded-lg bg-blue-900/40 hover:bg-blue-800/60 text-cyan-200 border border-blue-700/50 text-[11px] transition-colors cursor-pointer"
+          >
+            🛡️ Verify MSDE Accreditation
+          </button>
+          <button
+            onClick={() => setGeminiAssistantOpen(true)}
+            className="px-2.5 py-1 rounded-lg bg-blue-900/40 hover:bg-blue-800/60 text-cyan-200 border border-blue-700/50 text-[11px] transition-colors cursor-pointer"
+          >
+            🚨 Resolve Active Alerts
+          </button>
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* TWIN LIVE CCTV SURVEILLANCE SHOWCASE (FACTORY MISSING TOOLS + CLASSROOM ATTENDANCE) */}
+      {/* ========================================================================= */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* 1. FACTORY CCTV: MISSING OBJECT DETECTION */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-pulse" />
+              <span className="font-bold text-xs text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                <Camera className="w-3.5 h-3.5 text-red-500" />
+                Factory CCTV · Missing Tool Detection
+              </span>
+            </div>
+            <span className="text-[10px] font-mono font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/60 border border-red-200 dark:border-red-800 px-2 py-0.5 rounded">
+              ⚠️ 2 MISSING TOOLS FLAGGED
+            </span>
+          </div>
+
+          <div
+            onClick={() => {
+              triggerPinpoint({
+                name: 'Soldering Station #2 (MISSING)',
+                category: 'tool',
+                x: 74.0,
+                y: 44.0,
+                camId: 'cam-factory',
+                note: 'Workbench #4 (Station 24)'
+              });
+            }}
+            className="relative aspect-video bg-black rounded-xl overflow-hidden border border-slate-800 cursor-pointer group shadow-md"
+            title="Click to Lock Optical Reticle onto Missing Soldering Tool"
+          >
+            <img
+              src={cctvFactoryImg}
+              alt="Factory Workshop CCTV Feed"
+              className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-200"
+            />
+
+            {/* OSD Running Clock */}
+            <div className="absolute top-0 inset-x-0 p-2.5 bg-gradient-to-b from-black/80 via-black/30 to-transparent flex items-center justify-between font-mono text-[10px] text-white">
+              <span className="text-red-400 font-bold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
+                ● REC · {cctvClock.cctvOsdString}
+              </span>
+              <span className="text-cyan-300">CAM-12 ELECTRONICS BAY</span>
+            </div>
+
+            {/* Missing Tool Bounding Reticle 1 */}
+            <div
+              className="absolute border-2 border-dashed border-red-500 bg-red-500/20 rounded shadow-md pointer-events-none animate-pulse"
+              style={{ left: '72%', top: '41%', width: '15%', height: '18%' }}
+            >
+              <div className="absolute -top-5 left-0 bg-red-600 text-white font-mono text-[8px] px-1 py-0.2 rounded font-extrabold whitespace-nowrap">
+                ⚠️ MISSING: Soldering Station #2
+              </div>
+            </div>
+
+            {/* Missing Tool Bounding Reticle 2 */}
+            <div
+              className="absolute border-2 border-dashed border-red-500 bg-red-500/20 rounded shadow-md pointer-events-none"
+              style={{ left: '22%', top: '38%', width: '9%', height: '12%' }}
+            >
+              <div className="absolute -top-5 left-0 bg-red-600 text-white font-mono text-[8px] px-1 py-0.2 rounded font-bold whitespace-nowrap">
+                ⚠️ EMPTY: Tablet Scanner
+              </div>
+            </div>
+
+            <div className="absolute bottom-2 inset-x-2 flex items-center justify-between text-[10px] text-white">
+              <span className="bg-black/75 px-2 py-0.5 rounded backdrop-blur-xs font-mono">
+                Click to inspect on CCTV stream →
+              </span>
+              <span className="bg-emerald-600/90 px-2 py-0.5 rounded font-mono font-bold">
+                14 Tools In Place
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between text-xs pt-1">
+            <span className="text-[11px] text-slate-500 dark:text-slate-400">
+              Station 24: Unreturned tool detected by edge vision
+            </span>
+            <button
+              onClick={() => {
+                triggerPinpoint({
+                  name: 'Soldering Station #2 (MISSING)',
+                  category: 'tool',
+                  x: 74.0,
+                  y: 44.0,
+                  camId: 'cam-factory',
+                  note: 'Workbench #4 (Station 24)'
+                });
+              }}
+              className="text-xs font-bold text-blue-600 dark:text-cyan-400 hover:underline cursor-pointer"
+            >
+              Open Factory Reticle →
+            </button>
+          </div>
+        </div>
+
+        {/* 2. CLASSROOM CCTV: SAMPLE ATTENDANCE AUDIT */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="font-bold text-xs text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                <UserCheck className="w-3.5 h-3.5 text-emerald-500" />
+                Classroom CCTV · Live Trainee Attendance
+              </span>
+            </div>
+            <span className="text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded">
+              ✓ 18 PRESENT · 2 ABSENT
+            </span>
+          </div>
+
+          <div
+            onClick={() => setActivePage('attendance')}
+            className="relative aspect-video bg-black rounded-xl overflow-hidden border border-slate-800 cursor-pointer group shadow-md"
+            title="Click to View Full Attendance Roster"
+          >
+            <img
+              src={cctvClassroomImg}
+              alt="Classroom Attendance CCTV Feed"
+              className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-200"
+            />
+
+            {/* OSD Running Clock */}
+            <div className="absolute top-0 inset-x-0 p-2.5 bg-gradient-to-b from-black/80 via-black/30 to-transparent flex items-center justify-between font-mono text-[10px] text-white">
+              <span className="text-red-400 font-bold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
+                ● REC · {cctvClock.cctvOsdString}
+              </span>
+              <span className="text-cyan-300">CAM-04 ROOM 102</span>
+            </div>
+
+            {/* Present Trainee Green Box */}
+            <div
+              className="absolute border-2 border-emerald-400 bg-emerald-500/15 rounded pointer-events-none"
+              style={{ left: '62%', top: '65%', width: '13%', height: '24%' }}
+            >
+              <div className="absolute -top-4 left-0 bg-emerald-700 text-white font-mono text-[8px] px-1 py-0.2 rounded font-bold whitespace-nowrap">
+                ✓ Alex Chen · Present (99%)
+              </div>
+            </div>
+
+            {/* Absent Trainee Red Box */}
+            <div
+              className="absolute border-2 border-dashed border-red-500 bg-red-500/20 rounded pointer-events-none animate-pulse"
+              style={{ left: '74%', top: '43%', width: '10%', height: '17%' }}
+            >
+              <div className="absolute -top-5 left-0 bg-red-600 text-white font-mono text-[8px] px-1 py-0.2 rounded font-bold whitespace-nowrap">
+                ⚠️ Amanda Ross (Absent)
+              </div>
+            </div>
+
+            <div className="absolute bottom-2 inset-x-2 flex items-center justify-between text-[10px] text-white">
+              <span className="bg-black/75 px-2 py-0.5 rounded backdrop-blur-xs font-mono">
+                Click to open attendance register →
+              </span>
+              <span className="bg-emerald-600/90 px-2 py-0.5 rounded font-mono font-bold">
+                90% Batch Rate
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between text-xs pt-1">
+            <span className="text-[11px] text-slate-500 dark:text-slate-400">
+              Chennai Technical Hub: Room 102 Theory Lecture
+            </span>
+            <button
+              onClick={() => setActivePage('attendance')}
+              className="text-xs font-bold text-blue-600 dark:text-cyan-400 hover:underline cursor-pointer"
+            >
+              View Attendance Page →
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* 18 LIVE CAMERA SECTIONS QUICK-LAUNCH STRIP */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs space-y-2.5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+              <Camera className="w-4 h-4 text-blue-600 dark:text-cyan-400" />
+              18 Live Camera Surveillance Sections Online
+            </h3>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 font-bold border border-emerald-200 dark:border-emerald-800">
+              ● ALL STREAMS ACTIVE
+            </span>
+          </div>
+          <button
+            onClick={() => setActivePage('monitoring')}
+            className="text-xs font-bold text-blue-600 dark:text-cyan-400 hover:underline flex items-center gap-1 cursor-pointer"
+          >
+            <span>Launch Multi-Grid Operations Center</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+          Click any camera section below to immediately open the stream with calibrated optical reticles and interactive pinpoint placement:
+        </p>
+
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+          {[
+            { id: 'cam-factory', label: '🏭 Cam 12: Factory Electronics', note: '2 Missing Tools' },
+            { id: 'cam-classroom', label: '👥 Cam 04: Classroom Attendance', note: '18 Students' },
+            { id: 'cam-welding', label: '🔥 Cam 06: Heavy Welding Bay', note: 'Argon Station' },
+            { id: 'cam-cnc', label: '⚙️ Cam 08: Precision CNC Cell', note: 'Spindle & DRO' },
+            { id: 'cam-iot-server', label: '🖥️ Cam 14: Cloud Server Racks', note: '42U Racks' },
+            { id: 'cam-robotics', label: '🤖 Cam 09: Robotics Arm Arena', note: '6-Axis Arm' },
+            { id: 'cam-pc-lab-a', label: '💻 Cam 01: IT Computer Lab A', note: '35 Terminals' },
+            { id: 'cam-sewing', label: '🧵 Cam 05: Garment Sewing Hall', note: 'Juki Machines' },
+            { id: 'cam-electrical', label: '⚡ Cam 03: Electrical Bench Rig', note: '3-Phase AC/DC' },
+            { id: 'cam-turnstile', label: '🛂 Cam 00: Security Turnstile Gate', note: 'Biometrics' },
+            { id: 'cam-storage', label: '📦 Cam 11: Tool Crib & Locker', note: 'Micrometers' },
+            { id: 'cam-safety-station', label: '🦺 Cam 15: OSHA Safety Station', note: 'Eye-Wash & Fire' },
+            { id: 'cam-automotive', label: '🚗 Cam 16: Automotive Hoist Bay', note: 'Hydraulic Lift' },
+            { id: 'cam-drone-bay', label: '🛸 Cam 19: Drone Avionics Arena', note: 'Flight Cage' },
+          ].map(c => (
+            <button
+              key={c.id}
+              onClick={() => {
+                triggerPinpoint({
+                  name: c.label,
+                  category: 'facility',
+                  x: 50.0,
+                  y: 50.0,
+                  camId: c.id
+                });
+              }}
+              className="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-950/60 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:border-blue-400 text-xs font-semibold whitespace-nowrap transition-all active:scale-95 duration-75 cursor-pointer flex items-center gap-1.5 shadow-2xs shrink-0"
+            >
+              <span>{c.label}</span>
+              <span className="text-[9px] font-mono opacity-60 bg-black/5 dark:bg-white/10 px-1 py-0.2 rounded">
+                {c.note}
+              </span>
+            </button>
+          ))}
         </div>
       </div>
 
@@ -232,10 +576,14 @@ export const OverviewDashboard: React.FC = () => {
             <select
               value={selectedStateFilter}
               onChange={(e) => setSelectedStateFilter(e.target.value)}
-              className="text-xs bg-slate-50 border border-slate-200 rounded-md px-2 py-1 text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="text-xs bg-slate-50 border border-slate-200 rounded-md px-2 py-1 text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer font-medium"
             >
-              <option value="all">All States (1)</option>
-              <option value="Tamil Nadu">Tamil Nadu</option>
+              <option value="all">All States (28 States)</option>
+              {INDIAN_STATES.map(s => (
+                <option key={s.code} value={s.name}>
+                  {s.name} ({s.capital})
+                </option>
+              ))}
             </select>
           </div>
 
@@ -244,13 +592,14 @@ export const OverviewDashboard: React.FC = () => {
             <select
               value={selectedDistrictFilter}
               onChange={(e) => setSelectedDistrictFilter(e.target.value)}
-              className="text-xs bg-slate-50 border border-slate-200 rounded-md px-2 py-1 text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="text-xs bg-slate-50 border border-slate-200 rounded-md px-2 py-1 text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer font-medium"
             >
-              <option value="all">All Districts (4)</option>
-              <option value="Chennai">Chennai</option>
-              <option value="Madurai">Madurai</option>
-              <option value="Coimbatore">Coimbatore</option>
-              <option value="Tiruchirappalli">Tiruchirappalli</option>
+              <option value="all">All Districts (38 TN)</option>
+              {TAMIL_NADU_DISTRICTS.map(d => (
+                <option key={d.id} value={d.name}>
+                  #{d.number} {d.name} {d.isCapital ? '★ Capital' : ''}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -786,7 +1135,7 @@ export const OverviewDashboard: React.FC = () => {
             <p className="text-xs text-slate-500 mt-0.5">MSDE Approved Skill Development Facility</p>
 
             <form onSubmit={handleCreateCentre} className="mt-4 space-y-3">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="text-xs font-semibold text-slate-700 block mb-1">Centre Code</label>
                   <input
@@ -794,18 +1143,49 @@ export const OverviewDashboard: React.FC = () => {
                     required
                     value={newCentreCode}
                     onChange={(e) => setNewCentreCode(e.target.value)}
-                    className="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-600"
+                    className="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-600 font-mono"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">District</label>
-                  <input
-                    type="text"
-                    required
-                    value={newCentreDistrict}
-                    onChange={(e) => setNewCentreDistrict(e.target.value)}
-                    className="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-600"
-                  />
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">State (28 States)</label>
+                  <select
+                    value={newCentreState}
+                    onChange={(e) => setNewCentreState(e.target.value)}
+                    style={{ colorScheme: 'light dark' }}
+                    className="w-full text-xs bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-700 rounded-lg p-2 focus:ring-2 focus:ring-blue-600 cursor-pointer font-medium"
+                  >
+                    {INDIAN_STATES.map(s => (
+                      <option key={s.code} value={s.name} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-medium">
+                        {s.name} ({s.capital})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">District (38 TN)</label>
+                  {newCentreState === 'Tamil Nadu' ? (
+                    <select
+                      value={newCentreDistrict}
+                      onChange={(e) => setNewCentreDistrict(e.target.value)}
+                      style={{ colorScheme: 'light dark' }}
+                      className="w-full text-xs bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-700 rounded-lg p-2 focus:ring-2 focus:ring-blue-600 cursor-pointer font-medium"
+                    >
+                      {TAMIL_NADU_DISTRICTS.map(d => (
+                        <option key={d.id} value={d.name} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-medium">
+                          #{d.number} {d.name} {d.isCapital ? '★ Capital' : ''}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      required
+                      value={newCentreDistrict}
+                      onChange={(e) => setNewCentreDistrict(e.target.value)}
+                      placeholder="District name..."
+                      className="w-full text-xs bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-600"
+                    />
+                  )}
                 </div>
               </div>
 

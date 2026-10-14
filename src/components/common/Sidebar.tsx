@@ -25,7 +25,11 @@ import {
   LogOut,
   LogIn,
   Mail,
-  ShieldCheck
+  ShieldCheck,
+  Trophy,
+  UserPlus,
+  KeyRound,
+  MapPin
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -68,7 +72,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, setMobileOpen }) =
       title: 'MONITORING CORE',
       items: [
         { id: 'dashboard', label: 'Overview Dashboard', icon: LayoutDashboard },
-        { id: 'monitoring', label: 'Live Monitoring', icon: Video, badge: 'CCTV' },
+        { id: 'jury-showcase', label: 'Jury Showcase Arena', icon: Trophy, badge: 'HOT' },
+        { id: 'monitoring', label: 'Live Monitoring', icon: Video, badge: '18 CAMS' },
         { id: 'analysis', label: 'Video Analysis (AI)', icon: Eye, badge: 'YOLO' },
       ],
     },
@@ -91,6 +96,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, setMobileOpen }) =
       title: 'CENTRES & AUDITS',
       items: [
         { id: 'centres', label: 'Training Centres', icon: Building2, count: centres.length },
+        { id: 'places', label: 'Places & Districts', icon: MapPin, badge: '38 DIST' },
         { id: 'centre-detail', label: 'Centre Details', icon: FileSpreadsheet },
         { id: 'inspections', label: 'Inspections & Maintenance', icon: ClipboardCheck },
       ],
@@ -108,6 +114,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, setMobileOpen }) =
       items: [
         { id: 'state-suite', label: 'State Officer Suite', icon: ShieldCheck, badge: 'APEX' },
         { id: 'users', label: 'User Management', icon: Users },
+        { id: 'signup', label: 'Create New Account', icon: UserPlus, badge: 'AUTH' },
         { id: 'notifications', label: 'Notifications', icon: Bell, count: unreadNotifCount },
         { id: 'audit', label: 'Audit Logs', icon: History },
         { id: 'settings', label: 'Settings', icon: Settings },
@@ -218,40 +225,65 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, setMobileOpen }) =
         </div>
 
         {/* User Account / Auth Status in Sidebar */}
-        <div className="p-3 border-t border-slate-800 bg-[#07111F]/80 text-xs">
+        <div className="p-3 border-t border-slate-800 bg-[#07111F]/80 text-xs space-y-2">
           {isAuthenticated ? (
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 truncate">
-                <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-[11px] text-white shrink-0 ${
-                  currentUser.provider === 'gmail' ? 'bg-red-600' : 'bg-blue-600'
-                }`}>
-                  {currentUser.provider === 'gmail' ? 'G' : currentUser.name.charAt(0)}
-                </div>
-                <div className="truncate">
-                  <div className="font-semibold text-slate-200 text-xs truncate leading-tight">
-                    {currentUser.name}
+            <>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 truncate">
+                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-[11px] text-white shrink-0 ${
+                    currentUser.provider === 'gmail' ? 'bg-red-600' : 'bg-blue-600'
+                  }`}>
+                    {currentUser.provider === 'gmail' ? 'G' : currentUser.name.charAt(0)}
                   </div>
-                  <div className="text-[10px] text-slate-400 truncate font-mono">
-                    {currentUser.provider === 'gmail' ? 'booshan222007@gmail.com' : currentUser.email}
+                  <div className="truncate">
+                    <div className="font-semibold text-slate-200 text-xs truncate leading-tight">
+                      {currentUser.name}
+                    </div>
+                    <div className="text-[10px] text-slate-400 truncate font-mono">
+                      {currentUser.provider === 'gmail' ? 'booshan222007@gmail.com' : currentUser.email}
+                    </div>
                   </div>
                 </div>
+
+                <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono">
+                  {currentUser.role.split(' ')[0]}
+                </span>
               </div>
 
-              <button
-                onClick={logout}
-                title="Log Out of Portal"
-                className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded transition-colors"
-              >
-                <LogOut className="w-3.5 h-3.5" />
-              </button>
-            </div>
+              {/* Fast Action Buttons in Sidebar */}
+              <div className="grid grid-cols-2 gap-1.5 pt-1">
+                <button
+                  onClick={() => {
+                    setActivePage('signup');
+                    if (mobileOpen) setMobileOpen(false);
+                  }}
+                  className="py-1 px-2 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-semibold flex items-center justify-center gap-1 transition-all cursor-pointer"
+                  title="Create New Account"
+                >
+                  <UserPlus className="w-3 h-3 text-purple-400" />
+                  <span>New User</span>
+                </button>
+
+                <button
+                  onClick={logout}
+                  className="py-1 px-2 rounded-md bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-800/40 text-[11px] font-semibold flex items-center justify-center gap-1 transition-all cursor-pointer"
+                  title="Log Out of Portal"
+                >
+                  <LogOut className="w-3 h-3 text-red-400" />
+                  <span>Sign Out</span>
+                </button>
+              </div>
+            </>
           ) : (
             <button
-              onClick={() => setShowAuthModal(true)}
-              className="w-full py-1.5 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-colors"
+              onClick={() => {
+                setActivePage('login');
+                if (mobileOpen) setMobileOpen(false);
+              }}
+              className="w-full py-1.5 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
             >
               <LogIn className="w-3.5 h-3.5" />
-              <span>Login / Gmail</span>
+              <span>Login / Sign In</span>
             </button>
           )}
         </div>

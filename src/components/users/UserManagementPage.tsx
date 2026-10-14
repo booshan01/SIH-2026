@@ -13,7 +13,7 @@ import { initialUsers } from '../../utils/demoData';
 import { UserRole } from '../../types';
 
 export const UserManagementPage: React.FC = () => {
-  const { currentUser, switchUserRole, centres } = useApp();
+  const { currentUser, switchUserRole, centres, setActivePage } = useApp();
 
   const [userList, setUserList] = useState(initialUsers);
 
@@ -34,6 +34,16 @@ export const UserManagementPage: React.FC = () => {
           <p className="text-xs text-slate-600 mt-0.5">
             Role profiles enforce strict least-privilege access across administrators, officers, and centre managers.
           </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setActivePage('signup')}
+            className="px-3.5 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-sm active:scale-95 transition-all cursor-pointer"
+          >
+            <PlusCircle className="w-4 h-4" />
+            <span>Create New User Account</span>
+          </button>
         </div>
       </div>
 

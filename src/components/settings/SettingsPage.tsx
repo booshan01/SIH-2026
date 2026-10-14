@@ -15,7 +15,10 @@ import {
   LogOut,
   Mail,
   KeyRound,
-  LogIn
+  LogIn,
+  Sun,
+  Moon,
+  Monitor
 } from 'lucide-react';
 import { SystemSettings } from '../../types';
 
@@ -31,7 +34,9 @@ export const SettingsPage: React.FC = () => {
     logout,
     setShowAuthModal,
     sendVerificationOtp,
-    switchUserRole
+    switchUserRole,
+    theme,
+    setTheme
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<'monitoring' | 'general' | 'infrastructure' | 'privacy' | 'ai' | 'connectivity' | 'diagnostics' | 'auth'>('auth');
@@ -659,10 +664,84 @@ export const SettingsPage: React.FC = () => {
         )}
 
         {activeTab === 'general' && (
-          <div className="space-y-4 max-w-2xl text-xs">
+          <div className="space-y-5 max-w-2xl text-xs">
             <h3 className="font-bold text-sm text-slate-900 pb-2 border-b border-slate-100">
               General Organization & Branding
             </h3>
+
+            {/* Dark Mode and Light Mode Controls */}
+            <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 space-y-3">
+              <div>
+                <label className="font-bold text-xs text-slate-900 block">
+                  Interface Color Scheme (Dark & Light Mode)
+                </label>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Select your preferred visual theme for the SAIMS monitoring dashboard and CCTV HUD.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTheme('light');
+                    setFormData({ ...formData, general: { ...formData.general, theme: 'light' } });
+                  }}
+                  className={`p-3 rounded-xl border text-left transition-all ${
+                    theme === 'light'
+                      ? 'border-blue-600 bg-white shadow-xs ring-2 ring-blue-500/30'
+                      : 'border-slate-200 bg-white hover:bg-slate-100/70'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1.5">
+                    <Sun className="w-5 h-5 text-amber-500" />
+                    {theme === 'light' && <CheckCircle2 className="w-4 h-4 text-blue-600" />}
+                  </div>
+                  <div className="font-bold text-xs text-slate-900">Light Mode</div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">Crisp daytime clarity</div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTheme('dark');
+                    setFormData({ ...formData, general: { ...formData.general, theme: 'dark' } });
+                  }}
+                  className={`p-3 rounded-xl border text-left transition-all ${
+                    theme === 'dark'
+                      ? 'border-blue-500 bg-slate-900 text-white shadow-xs ring-2 ring-blue-400/30'
+                      : 'border-slate-200 bg-white hover:bg-slate-100/70'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1.5">
+                    <Moon className="w-5 h-5 text-indigo-400" />
+                    {theme === 'dark' && <CheckCircle2 className="w-4 h-4 text-cyan-400" />}
+                  </div>
+                  <div className="font-bold text-xs text-slate-900">Dark Mode</div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">Optimal for 24/7 CCTV vigilance</div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTheme('system');
+                    setFormData({ ...formData, general: { ...formData.general, theme: 'system' } });
+                  }}
+                  className={`p-3 rounded-xl border text-left transition-all ${
+                    theme === 'system'
+                      ? 'border-blue-600 bg-white shadow-xs ring-2 ring-blue-500/30'
+                      : 'border-slate-200 bg-white hover:bg-slate-100/70'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1.5">
+                    <Monitor className="w-5 h-5 text-slate-600" />
+                    {theme === 'system' && <CheckCircle2 className="w-4 h-4 text-blue-600" />}
+                  </div>
+                  <div className="font-bold text-xs text-slate-900">System Default</div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">Sync with OS preferences</div>
+                </button>
+              </div>
+            </div>
 
             <div>
               <label className="font-semibold text-slate-800 block mb-1">System Application Name</label>

@@ -188,18 +188,18 @@ export const HelpDocsPage: React.FC = () => {
               { method: 'PATCH', path: '/api/alerts/{id}', desc: 'Update review status and append resolution notes' },
               { method: 'GET', path: '/api/audit-logs', desc: 'Query immutable system audit log entries' },
             ].map(ep => (
-              <div key={ep.path} className="p-2.5 bg-slate-50 rounded border border-slate-200 flex items-center justify-between">
+              <div key={`${ep.method}-${ep.path}`} className="p-2.5 bg-slate-50 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 flex items-center justify-between">
                 <div>
                   <span className={`px-1.5 py-0.5 rounded font-bold text-[10px] ${
-                    ep.method === 'GET' ? 'bg-blue-100 text-blue-700' :
-                    ep.method === 'POST' ? 'bg-emerald-100 text-emerald-700' :
-                    'bg-amber-100 text-amber-800'
+                    ep.method === 'GET' ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' :
+                    ep.method === 'POST' ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300' :
+                    'bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300'
                   }`}>
                     {ep.method}
                   </span>
-                  <span className="ml-2 font-semibold text-slate-800">{ep.path}</span>
+                  <span className="ml-2 font-semibold text-slate-800 dark:text-slate-200">{ep.path}</span>
                 </div>
-                <span className="text-slate-500 font-sans text-xs">{ep.desc}</span>
+                <span className="text-slate-500 dark:text-slate-400 font-sans text-xs">{ep.desc}</span>
               </div>
             ))}
           </div>

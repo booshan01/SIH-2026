@@ -14,7 +14,12 @@ import {
   LogOut,
   LogIn,
   Mail,
-  User as UserIcon
+  User as UserIcon,
+  Sparkles,
+  Sun,
+  Moon,
+  Trophy,
+  UserPlus
 } from 'lucide-react';
 import { UserRole } from '../../types';
 import { AuthModal } from '../auth/AuthModal';
@@ -37,7 +42,10 @@ export const Navbar: React.FC = () => {
     loadDemoData,
     globalSearch,
     setGlobalSearch,
-    setActivePage
+    setActivePage,
+    setGeminiAssistantOpen,
+    theme,
+    toggleTheme
   } = useApp();
 
   const [showNotifications, setShowNotifications] = useState(false);
@@ -50,7 +58,7 @@ export const Navbar: React.FC = () => {
 
   return (
     <>
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-40 h-16 flex items-center justify-between px-4 sm:px-6 shadow-xs">
+      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-40 h-16 flex items-center justify-between px-4 sm:px-6 shadow-xs transition-colors">
         {/* Left: Organization Badge & Search */}
         <div className="flex items-center gap-4 flex-1 max-w-xl">
           <div className="flex items-center gap-2.5">
@@ -58,10 +66,10 @@ export const Navbar: React.FC = () => {
               🇮🇳
             </div>
             <div className="hidden sm:block">
-              <div className="text-xs font-semibold text-slate-800 leading-tight">
+              <div className="text-xs font-semibold text-slate-800 dark:text-slate-200 leading-tight">
                 MSDE · Government of India
               </div>
-              <div className="text-[11px] text-slate-500 font-mono">
+              <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
                 Problem ID: 26245
               </div>
             </div>
@@ -74,7 +82,7 @@ export const Navbar: React.FC = () => {
               value={globalSearch}
               onChange={(e) => setGlobalSearch(e.target.value)}
               placeholder="Search centres, batches, alerts, inventory..."
-              className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-lg pl-9 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition-all"
+              className="w-full bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 text-xs rounded-lg pl-9 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white dark:focus:bg-slate-800 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500"
             />
             {globalSearch && (
               <button 
@@ -87,8 +95,48 @@ export const Navbar: React.FC = () => {
           </div>
         </div>
 
-        {/* Right: Low bandwidth toggle, Demo actions, Notifications, User Auth */}
+        {/* Right: Low bandwidth toggle, Theme toggle, Demo actions, Notifications, User Auth */}
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* Dark / Light Theme Quick Toggle */}
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 transition-colors"
+            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            aria-label="Toggle Dark and Light Mode"
+          >
+            {theme === 'dark' ? (
+              <Sun className="w-4 h-4 text-amber-400 animate-in spin-in-180 duration-200" />
+            ) : (
+              <Moon className="w-4 h-4 text-slate-700 animate-in spin-in-180 duration-200" />
+            )}
+          </button>
+
+          {/* Jury Showcase & Apex Innovation Button */}
+          <button
+            onClick={() => setActivePage('jury-showcase')}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 hover:from-amber-600 hover:to-amber-800 text-slate-950 shadow-xs transition-all ring-1 ring-amber-400/40 group cursor-pointer"
+            title="Open Jury Showcase & Live Simulation Arena"
+          >
+            <Trophy className="w-3.5 h-3.5 fill-current text-slate-950 group-hover:scale-110 transition-transform" />
+            <span>Jury Showcase</span>
+            <span className="hidden lg:inline text-[9px] bg-slate-950/20 px-1 py-0.2 rounded font-mono font-bold">
+              APEX
+            </span>
+          </button>
+
+          {/* Google Gemini AI Assistant Button */}
+          <button
+            onClick={() => setGeminiAssistantOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-800 text-white shadow-xs transition-all ring-1 ring-blue-400/30 group cursor-pointer"
+            title="Open Google Gemini AI Assistant (Ctrl+K)"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-cyan-200 group-hover:rotate-12 transition-transform" />
+            <span>Gemini AI</span>
+            <span className="hidden sm:inline text-[9px] bg-white/20 px-1.5 py-0.2 rounded font-mono font-medium">
+              Ctrl+K
+            </span>
+          </button>
+
           {/* Low-Bandwidth Mode Toggle */}
           <button
             onClick={toggleLowBandwidth}
@@ -205,130 +253,152 @@ export const Navbar: React.FC = () => {
 
           {/* User Auth & Profile Menu */}
           {isAuthenticated ? (
-            <div className="relative">
-              <button
-                onClick={() => setShowUserMenu(!showUserMenu)}
-                className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors"
-              >
-                {/* Avatar with Google badge if logged in with Gmail */}
-                <div className="relative">
-                  {currentUser.provider === 'gmail' ? (
-                    <div className="w-6 h-6 rounded-full bg-red-600 text-white font-bold text-[10px] flex items-center justify-center shadow-xs">
-                      G
-                    </div>
-                  ) : (
-                    <UserCircle className="w-5 h-5 text-slate-600" />
-                  )}
-                  {currentUser.provider === 'gmail' && (
-                    <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border border-white" />
-                  )}
-                </div>
-
-                <div className="text-left hidden sm:block max-w-[120px] truncate">
-                  <span className="text-[10px] uppercase tracking-wider text-slate-500 block leading-tight font-semibold truncate">
-                    {currentUser.provider === 'gmail' ? 'Gmail User' : currentUser.role}
-                  </span>
-                  <span className="text-xs font-semibold text-slate-900 leading-tight truncate block">
-                    {currentUser.name}
-                  </span>
-                </div>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-500 ml-0.5" />
-              </button>
-
-              {showUserMenu && (
-                <div className="absolute right-0 mt-2 w-72 bg-white border border-slate-200 rounded-xl shadow-xl py-2 z-50 animate-in fade-in">
-                  {/* User Profile Card */}
-                  <div className="px-3.5 py-2.5 border-b border-slate-100 bg-slate-50/50">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center">
-                        {currentUser.name.charAt(0)}
+            <div className="flex items-center gap-1.5">
+              <div className="relative">
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer"
+                >
+                  {/* Avatar with Google badge if logged in with Gmail */}
+                  <div className="relative">
+                    {currentUser.provider === 'gmail' ? (
+                      <div className="w-6 h-6 rounded-full bg-red-600 text-white font-bold text-[10px] flex items-center justify-center shadow-xs">
+                        G
                       </div>
-                      <div className="truncate">
-                        <div className="font-bold text-xs text-slate-900 truncate">{currentUser.name}</div>
-                        <div className="text-[11px] text-slate-500 font-mono truncate">{currentUser.email}</div>
-                      </div>
-                    </div>
-                    <div className="mt-2 flex items-center gap-1.5">
-                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
-                        currentUser.provider === 'gmail' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-blue-50 text-blue-700 border border-blue-200'
-                      }`}>
-                        {currentUser.provider === 'gmail' ? 'Google / Gmail Auth' : 'Govt Portal Auth'}
-                      </span>
-                      <span className="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-mono">
-                        {currentUser.role}
-                      </span>
-                    </div>
+                    ) : (
+                      <UserCircle className="w-5 h-5 text-slate-600" />
+                    )}
+                    {currentUser.provider === 'gmail' && (
+                      <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border border-white" />
+                    )}
                   </div>
 
-                  {/* Switch Role Option */}
-                  <div className="px-3 py-1.5 border-b border-slate-100">
-                    <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                      Switch Active Role
-                    </div>
-                    <div className="space-y-0.5 mt-1">
-                      {roles.map((r) => (
-                        <button
-                          key={r}
-                          onClick={() => {
-                            switchUserRole(r);
-                            setShowUserMenu(false);
-                          }}
-                          className={`w-full text-left px-2.5 py-1.5 text-xs rounded-md flex items-center justify-between hover:bg-slate-50 transition-colors ${
-                            currentUser.role === r ? 'font-semibold text-blue-700 bg-blue-50/60' : 'text-slate-700'
-                          }`}
-                        >
-                          <span>{r}</span>
-                          {currentUser.role === r && <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />}
-                        </button>
-                      ))}
-                    </div>
+                  <div className="text-left hidden sm:block max-w-[120px] truncate">
+                    <span className="text-[10px] uppercase tracking-wider text-slate-500 block leading-tight font-semibold truncate">
+                      {currentUser.provider === 'gmail' ? 'Gmail User' : currentUser.role}
+                    </span>
+                    <span className="text-xs font-semibold text-slate-900 leading-tight truncate block">
+                      {currentUser.name}
+                    </span>
                   </div>
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-500 ml-0.5" />
+                </button>
 
-                  {/* Actions: Sign In with Another Account or Log Out */}
-                  <div className="py-1 px-2 space-y-1">
-                    <button
-                      onClick={() => {
-                        setShowUserMenu(false);
-                        setShowAuthModal(true);
-                      }}
-                      className="w-full text-left px-2.5 py-1.5 text-xs text-slate-700 hover:bg-slate-50 rounded-md flex items-center gap-2"
-                    >
-                      <Mail className="w-3.5 h-3.5 text-red-500" />
-                      <span>Switch Google / Gmail Account</span>
-                    </button>
+                {showUserMenu && (
+                  <div className="absolute right-0 mt-2 w-72 bg-white border border-slate-200 rounded-xl shadow-xl py-2 z-50 animate-in fade-in">
+                    {/* User Profile Card */}
+                    <div className="px-3.5 py-2.5 border-b border-slate-100 bg-slate-50/50">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center">
+                          {currentUser.name.charAt(0)}
+                        </div>
+                        <div className="truncate">
+                          <div className="font-bold text-xs text-slate-900 truncate">{currentUser.name}</div>
+                          <div className="text-[11px] text-slate-500 font-mono truncate">{currentUser.email}</div>
+                        </div>
+                      </div>
+                      <div className="mt-2 flex items-center gap-1.5">
+                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
+                          currentUser.provider === 'gmail' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-blue-50 text-blue-700 border border-blue-200'
+                        }`}>
+                          {currentUser.provider === 'gmail' ? 'Google / Gmail Auth' : 'Govt Portal Auth'}
+                        </span>
+                        <span className="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-mono">
+                          {currentUser.role}
+                        </span>
+                      </div>
+                    </div>
 
-                    <button
-                      onClick={() => {
-                        setShowUserMenu(false);
-                        setShowResetConfirm(true);
-                      }}
-                      className="w-full text-left px-2.5 py-1.5 text-xs text-slate-700 hover:bg-slate-50 rounded-md flex items-center gap-2"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5 text-amber-600" />
-                      <span>Reset Demo Environment</span>
-                    </button>
+                    {/* Switch Role Option */}
+                    <div className="px-3 py-1.5 border-b border-slate-100">
+                      <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                        Switch Active Role
+                      </div>
+                      <div className="space-y-0.5 mt-1">
+                        {roles.map((r) => (
+                          <button
+                            key={r}
+                            onClick={() => {
+                              switchUserRole(r);
+                              setShowUserMenu(false);
+                            }}
+                            className={`w-full text-left px-2.5 py-1.5 text-xs rounded-md flex items-center justify-between hover:bg-slate-50 transition-colors ${
+                              currentUser.role === r ? 'font-semibold text-blue-700 bg-blue-50/60' : 'text-slate-700'
+                            }`}
+                          >
+                            <span>{r}</span>
+                            {currentUser.role === r && <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
 
-                    <div className="border-t border-slate-100 pt-1">
+                    {/* Actions: Sign In with Another Account or Log Out */}
+                    <div className="py-1 px-2 space-y-1">
                       <button
                         onClick={() => {
                           setShowUserMenu(false);
-                          logout();
+                          setActivePage('signup');
                         }}
-                        className="w-full text-left px-2.5 py-1.5 text-xs text-red-600 hover:bg-red-50 rounded-md flex items-center gap-2 font-semibold"
+                        className="w-full text-left px-2.5 py-1.5 text-xs text-purple-700 hover:bg-purple-50 rounded-md flex items-center gap-2 font-semibold cursor-pointer"
                       >
-                        <LogOut className="w-3.5 h-3.5 text-red-600" />
-                        <span>Sign Out / Log Out</span>
+                        <UserPlus className="w-3.5 h-3.5 text-purple-600" />
+                        <span>Create Brand New Account</span>
                       </button>
+
+                      <button
+                        onClick={() => {
+                          setShowUserMenu(false);
+                          setShowAuthModal(true);
+                        }}
+                        className="w-full text-left px-2.5 py-1.5 text-xs text-slate-700 hover:bg-slate-50 rounded-md flex items-center gap-2 cursor-pointer"
+                      >
+                        <Mail className="w-3.5 h-3.5 text-red-500" />
+                        <span>Switch Google / Gmail Account</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setShowUserMenu(false);
+                          setShowResetConfirm(true);
+                        }}
+                        className="w-full text-left px-2.5 py-1.5 text-xs text-slate-700 hover:bg-slate-50 rounded-md flex items-center gap-2 cursor-pointer"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5 text-amber-600" />
+                        <span>Reset Demo Environment</span>
+                      </button>
+
+                      <div className="border-t border-slate-100 pt-1">
+                        <button
+                          onClick={() => {
+                            setShowUserMenu(false);
+                            logout();
+                          }}
+                          className="w-full text-left px-2.5 py-1.5 text-xs text-red-600 hover:bg-red-50 rounded-md flex items-center gap-2 font-semibold cursor-pointer"
+                        >
+                          <LogOut className="w-3.5 h-3.5 text-red-600" />
+                          <span>Sign Out / Log Out</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
+
+              {/* Direct Quick Log Out Button */}
+              <button
+                onClick={logout}
+                title="Sign Out / Log Out"
+                className="p-2 rounded-lg text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 border border-slate-200 dark:border-slate-700 hover:border-red-300 transition-all active:scale-95 duration-75 cursor-pointer"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
             </div>
           ) : (
             /* Logged Out State: Big Sign In Button */
             <button
               onClick={() => setShowAuthModal(true)}
-              className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow-xs transition-colors"
+              className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow-xs transition-colors cursor-pointer"
             >
               <LogIn className="w-3.5 h-3.5" />
               <span>Login / Gmail</span>

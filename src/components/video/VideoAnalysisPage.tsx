@@ -20,8 +20,10 @@ import {
 } from 'lucide-react';
 import { VideoAnalysisRun, BoundingBox, VideoAnalysisFrame } from '../../types';
 import { exportToCSV, formatDateTime } from '../../utils/complianceEngine';
+import { useLiveCctvClock } from '../../utils/useLiveCctvClock';
 
 export const VideoAnalysisPage: React.FC = () => {
+  const cctvClock = useLiveCctvClock(1000);
   const {
     centres,
     classrooms,
@@ -504,7 +506,7 @@ export const VideoAnalysisPage: React.FC = () => {
                   CAMERA: CAM-01 [OVERHEAD WIDE] · RES: 1920x1080 · FPS: 25.0
                 </div>
                 <div className="flex justify-between text-[11px] font-mono text-slate-600">
-                  <span>TIME: 2026-10-09 10:15:32 IST</span>
+                  <span>TIME: {cctvClock.cctvOsdString}</span>
                   <span>LOCATION: CHENNAI SKILLS LAB A</span>
                 </div>
               </div>

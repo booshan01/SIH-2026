@@ -13,12 +13,24 @@ import {
   ChevronRight,
   Eye,
   FileCheck2,
-  X
+  X,
+  Camera,
+  Sparkles,
+  Crosshair,
+  Users,
+  Maximize2,
+  Zap
 } from 'lucide-react';
 import { formatDateTime, exportToCSV } from '../../utils/complianceEngine';
 import { AttendanceRecord, AttendanceVerificationStatus } from '../../types';
+import cctvClassroomImg from '../../assets/images/cctv_classroom_attendance_1791819789935.jpg';
+import { useLiveCctvClock } from '../../utils/useLiveCctvClock';
 
 export const AttendancePage: React.FC = () => {
+  const cctvClock = useLiveCctvClock(1000);
+  const [highlightAbsentOnly, setHighlightAbsentOnly] = useState(false);
+  const [cctvSyncToast, setCctvSyncToast] = useState<string | null>(null);
+  const [isResyncing, setIsResyncing] = useState(false);
   const {
     attendance,
     centres,
@@ -184,6 +196,182 @@ export const AttendancePage: React.FC = () => {
         <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
         <div>
           <strong>MSDE Human Verification Mandate:</strong> A discrepancy alert is an operational notice for review, never conclusive proof of misconduct. Officers must investigate coverage blind spots, annex rooms, or hardware anomalies prior to punitive compliance actions.
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* SAMPLE CLASSROOM ATTENDANCE LIVE CCTV CAMERA STREAM (WITH AUTHENTIC OVERLAY) */}
+      {/* ========================================================================= */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-600/10 dark:bg-blue-950/60 text-blue-600 border border-blue-500/20 flex items-center justify-center font-bold">
+              <Camera className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                  Sample Classroom Attendance — Live CCTV Camera Stream
+                </h2>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-red-600 text-white animate-pulse">
+                  ● LIVE FEED
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                CAM 04 ROOM 102 · Optical Face Verification & Continuous Attendance Audit
+              </p>
+            </div>
+          </div>
+
+          {/* Interactive Fast Actions */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                setIsResyncing(true);
+                setTimeout(() => {
+                  setIsResyncing(false);
+                  setCctvSyncToast('AI Facial Attendance Resynced: 18 Seated Trainees Confirmed, 2 Absent Desks Flagged.');
+                  setTimeout(() => setCctvSyncToast(null), 3500);
+                }, 180);
+              }}
+              disabled={isResyncing}
+              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer active:scale-95 duration-75"
+            >
+              <Zap className="w-3.5 h-3.5 text-amber-300" />
+              <span>{isResyncing ? 'Resyncing...' : '⚡ Re-Sync AI Match'}</span>
+            </button>
+
+            <button
+              onClick={() => setHighlightAbsentOnly(!highlightAbsentOnly)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer active:scale-95 duration-75 ${
+                highlightAbsentOnly
+                  ? 'bg-red-500 text-white border-red-600'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+              }`}
+            >
+              {highlightAbsentOnly ? '✓ Absent Desks Only' : 'Filter Absent Desks'}
+            </button>
+
+            <button
+              onClick={() => setActivePage('monitoring')}
+              className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-lg text-xs font-semibold flex items-center gap-1.5 border border-slate-300 dark:border-slate-700 transition-all cursor-pointer"
+            >
+              <Maximize2 className="w-3.5 h-3.5" />
+              <span>Precision Camera Reticle</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Sync Toast */}
+        {cctvSyncToast && (
+          <div className="p-2.5 bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-xl text-xs flex items-center gap-2 font-medium animate-in fade-in">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{cctvSyncToast}</span>
+          </div>
+        )}
+
+        {/* Real Authentic Classroom CCTV Stream Frame */}
+        <div className="relative aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl border border-slate-800 select-none group">
+          <img
+            src={cctvClassroomImg}
+            alt="Sample Classroom Attendance CCTV Stream"
+            className="w-full h-full object-cover"
+          />
+
+          {/* CCTV TOP OSD HUD OVERLAY (RUNNING WITH REAL COMPUTER TIME) */}
+          <div className="absolute top-0 inset-x-0 p-3 sm:p-4 bg-gradient-to-b from-black/85 via-black/40 to-transparent flex items-center justify-between text-xs font-mono text-white z-20 pointer-events-none">
+            <div className="flex items-center gap-2.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-ping inline-block" />
+              <span className="font-bold tracking-wider text-red-400">● REC</span>
+              <span className="text-slate-400">|</span>
+              <span className="font-bold tracking-wide text-white drop-shadow">
+                {cctvClock.cctvOsdString}
+              </span>
+              <span className="text-slate-400 hidden md:inline">|</span>
+              <span className="text-cyan-300 font-semibold hidden md:inline">
+                CAM 04 ROOM 102 · CHENNAI SKILLS CENTRE
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-emerald-400 drop-shadow">
+                30 FPS · 4K UHD · FACE_ID_V4 ACTIVE
+              </span>
+            </div>
+          </div>
+
+          {/* STUDENT OVERLAYS */}
+          <div className="absolute inset-0 pointer-events-none z-15">
+            {/* Trainee 1: Alex Chen */}
+            {!highlightAbsentOnly && (
+              <div
+                className="absolute border-2 border-emerald-400 bg-emerald-500/15 rounded-lg pointer-events-auto cursor-pointer"
+                style={{ left: '62%', top: '65%', width: '13%', height: '24%' }}
+              >
+                <div className="absolute -top-5 left-0 bg-emerald-700 text-white font-mono text-[9px] px-1.5 py-0.2 rounded font-bold whitespace-nowrap shadow-sm">
+                  ✓ Alex Chen · Present (99% Match)
+                </div>
+              </div>
+            )}
+
+            {/* Trainee 2: Sarah Jenkins */}
+            {!highlightAbsentOnly && (
+              <div
+                className="absolute border-2 border-emerald-400 bg-emerald-500/15 rounded-lg pointer-events-auto cursor-pointer"
+                style={{ left: '19%', top: '53%', width: '10%', height: '21%' }}
+              >
+                <div className="absolute -top-5 left-0 bg-emerald-700 text-white font-mono text-[9px] px-1.5 py-0.2 rounded font-bold whitespace-nowrap shadow-sm">
+                  ✓ Sarah Jenkins · Present (98%)
+                </div>
+              </div>
+            )}
+
+            {/* Trainee 3: David Miller */}
+            {!highlightAbsentOnly && (
+              <div
+                className="absolute border-2 border-emerald-400 bg-emerald-500/15 rounded-lg pointer-events-auto cursor-pointer"
+                style={{ left: '42%', top: '48%', width: '10%', height: '18%' }}
+              >
+                <div className="absolute -top-5 left-0 bg-emerald-700 text-white font-mono text-[9px] px-1.5 py-0.2 rounded font-bold whitespace-nowrap shadow-sm">
+                  ✓ David Miller · Present (99%)
+                </div>
+              </div>
+            )}
+
+            {/* Empty Desk 1: Amanda Ross (Unauthorized Absence) */}
+            <div
+              className="absolute border-2 border-dashed border-red-500 bg-red-500/20 rounded-lg pointer-events-auto cursor-pointer animate-pulse"
+              style={{ left: '74%', top: '43%', width: '10%', height: '17%' }}
+            >
+              <div className="absolute -top-6 left-0 bg-red-600 text-white font-mono text-[9px] px-1.5 py-0.5 rounded font-extrabold whitespace-nowrap shadow-md">
+                ⚠️ EMPTY SEAT: Amanda Ross (Absent)
+              </div>
+              <div className="absolute -bottom-4 left-0 bg-black/90 text-red-300 font-mono text-[8px] px-1 rounded whitespace-nowrap">
+                Unauthorized Absence · Biometric Missing
+              </div>
+            </div>
+
+            {/* Empty Desk 2: Emily Watson (Approved Leave) */}
+            <div
+              className="absolute border-2 border-dashed border-amber-500 bg-amber-500/20 rounded-lg pointer-events-auto cursor-pointer"
+              style={{ left: '51%', top: '39%', width: '9%', height: '16%' }}
+            >
+              <div className="absolute -top-5 left-0 bg-amber-600 text-white font-mono text-[9px] px-1.5 py-0.5 rounded font-bold whitespace-nowrap shadow-md">
+                ⚠️ EMPTY SEAT: Emily Watson
+              </div>
+              <div className="absolute -bottom-4 left-0 bg-black/90 text-amber-200 font-mono text-[8px] px-1 rounded whitespace-nowrap">
+                Approved Medical Leave
+              </div>
+            </div>
+
+            {/* Bottom Status Banner for Classroom Attendance */}
+            <div className="absolute bottom-4 left-4 bg-slate-950/85 backdrop-blur-md px-3 py-1.5 rounded-lg border border-emerald-500/40 text-[10px] font-mono text-white z-10 flex items-center gap-2">
+              <UserCheck className="w-3.5 h-3.5 text-emerald-400" />
+              <span>
+                CLASSROOM RECONCILIATION: <strong className="text-emerald-400">18 SEATED STUDENTS VERIFIED</strong> · 2 Absent (1 Approved, 1 Unauthorized) · 90% Rate
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 

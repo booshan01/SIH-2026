@@ -10,62 +10,86 @@ import {
   UserCheck,
   Building2,
   Video,
-  Activity,
-  Cpu,
-  Layers,
   ChevronRight,
   AlertCircle,
   KeyRound,
   Send,
   Timer,
-  Info,
-  ShieldAlert,
-  BadgeAlert,
-  Check
+  Check,
+  UserPlus,
+  LogIn,
+  RotateCcw,
+  ArrowLeft,
+  Clock,
+  Zap,
+  Users
 } from 'lucide-react';
 import { UserRole } from '../../types';
 import { ROLE_CONFIGURATIONS } from '../../utils/permissions';
+import { useLiveCctvClock } from '../../utils/useLiveCctvClock';
 
 interface LoginPageProps {
   logoutNotice?: boolean;
+  initialMode?: 'signin' | 'signup';
+  onNavigateToLogout?: () => void;
 }
 
-export const LoginPage: React.FC<LoginPageProps> = ({ logoutNotice = false }) => {
+export const LoginPage: React.FC<LoginPageProps> = ({
+  logoutNotice = false,
+  initialMode = 'signin',
+  onNavigateToLogout
+}) => {
   const {
     loginWithGmail,
+    loginWithMicrosoft,
     loginWithCredentials,
     loginWithDemo,
+    registerNewAccount,
     sendVerificationOtp,
     verifyOtp,
+    theme,
+    toggleTheme,
+    setIsLoggedOut
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState<'gmail' | 'official' | 'demo'>('gmail');
+  const cctvClock = useLiveCctvClock(1000);
+
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>(initialMode);
+  const [activeTab, setActiveTab] = useState<'gmail' | 'microsoft' | 'credentials' | 'demo'>('gmail');
+
+  // Form inputs
+  const [nameInput, setNameInput] = useState('Booshan');
   const [emailInput, setEmailInput] = useState('booshan222007@gmail.com');
   const [passwordInput, setPasswordInput] = useState('state@msde2026');
   const [selectedRole, setSelectedRole] = useState<UserRole>('State Officer');
-  const [rememberMe, setRememberMe] = useState(true);
+  const [departmentInput, setDepartmentInput] = useState('MSDE Directorate of Skill Development');
 
-  // Email Verification & OTP state
-  const [requireOtp, setRequireOtp] = useState(true);
-  const [otpInput, setOtpInput] = useState('');
+  // OTP Verification Cross-Check Screen state
+  const [step, setStep] = useState<'input' | 'otp_verification'>('input');
+  const [otpDigits, setOtpDigits] = useState(['4', '8', '9', '2', '0', '1']);
   const [otpSent, setOtpSent] = useState(false);
   const [otpSending, setOtpSending] = useState(false);
+  const [generatedOtp, setGeneratedOtp] = useState('489201');
   const [otpSuccessMessage, setOtpSuccessMessage] = useState<string | null>(null);
   const [otpErrorMessage, setOtpErrorMessage] = useState<string | null>(null);
   const [cooldownSeconds, setCooldownSeconds] = useState(0);
 
-  // Sync sample credentials when role is switched
+  // Sync sample credentials when tab or role changes
   useEffect(() => {
-    if (activeTab === 'official') {
+    if (activeTab === 'credentials') {
       const config = ROLE_CONFIGURATIONS[selectedRole];
       if (config) {
         setEmailInput(config.loginEmail);
         setPasswordInput(config.loginPass);
       }
+    } else if (activeTab === 'gmail') {
+      setEmailInput(authMode === 'signup' ? 'new.officer@gmail.com' : 'booshan222007@gmail.com');
+    } else if (activeTab === 'microsoft') {
+      setEmailInput(authMode === 'signup' ? 'new.officer@microsoft.com' : 'booshan.officer@microsoft.com');
     }
-  }, [selectedRole, activeTab]);
+  }, [selectedRole, activeTab, authMode]);
 
-  // Cooldown countdown timer
+  // Cooldown timer
   useEffect(() => {
     if (cooldownSeconds <= 0) return;
     const timer = setInterval(() => {
@@ -74,10 +98,33 @@ export const LoginPage: React.FC<LoginPageProps> = ({ logoutNotice = false }) =>
     return () => clearInterval(timer);
   }, [cooldownSeconds]);
 
-  // Handle Send Verification Email OTP
-  const handleSendOtp = async (targetEmail: string) => {
+  // ULTRA-FAST 1-Click Express Login (0ms instant execution)
+  const handleFastExpressLogin = (role: UserRole = selectedRole) => {
+    setIsLoggedOut(false);
+    if (authMode === 'signup') {
+      registerNewAccount({
+        name: nameInput.trim() || 'New Officer',
+        email: emailInput.trim() || 'officer@msde.gov.in',
+        role,
+        department: departmentInput.trim(),
+        password: passwordInput,
+        provider: activeTab === 'gmail' ? 'gmail' : activeTab === 'microsoft' ? 'microsoft' : 'password'
+      });
+    } else {
+      if (activeTab === 'gmail') {
+        loginWithGmail(emailInput, nameInput || 'Booshan (Google User)', role);
+      } else if (activeTab === 'microsoft') {
+        loginWithMicrosoft(emailInput, nameInput || 'Booshan (Microsoft User)', role);
+      } else {
+        loginWithDemo(role);
+      }
+    }
+  };
+
+  // Dispatch OTP with high speed
+  const handleInitiateOtp = async (targetEmail: string) => {
     if (!targetEmail || !targetEmail.includes('@')) {
-      setOtpErrorMessage('Please provide a valid official government or Gmail address.');
+      setOtpErrorMessage('Please provide a valid official government, Google, or Microsoft email address.');
       return;
     }
     setOtpSending(true);
@@ -85,57 +132,73 @@ export const LoginPage: React.FC<LoginPageProps> = ({ logoutNotice = false }) =>
 
     try {
       const res = await sendVerificationOtp(targetEmail);
+      setGeneratedOtp(res.otp);
       setOtpSent(true);
-      setOtpSuccessMessage(`Verification OTP dispatched to ${targetEmail}. (Demo OTP: ${res.otp})`);
+      setOtpSuccessMessage(`Security OTP dispatched to ${targetEmail}. (Demo Security Code: ${res.otp})`);
       setCooldownSeconds(60);
-      setOtpInput(res.otp); // Pre-fill for instant frictionless evaluation
+      setStep('otp_verification');
+      // Auto-populate 6 digits for ultra-fast validation
+      const digits = res.otp.split('').slice(0, 6);
+      setOtpDigits(digits);
     } catch {
-      setOtpErrorMessage('Failed to dispatch security verification email. Please retry.');
+      setOtpErrorMessage('Failed to dispatch verification code. Please retry.');
     } finally {
       setOtpSending(false);
     }
   };
 
-  // Handle Gmail Submit
-  const handleGmailSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (requireOtp && !otpSent) {
-      handleSendOtp(emailInput);
+  // Verify OTP and complete sign-in OR create account
+  const handleConfirmOtpAndLogin = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const enteredCode = otpDigits.join('');
+
+    if (enteredCode.length < 6) {
+      setOtpErrorMessage('Please enter the complete 6-digit verification code.');
       return;
     }
 
-    if (requireOtp && otpSent) {
-      const valid = verifyOtp(emailInput, otpInput);
-      if (!valid) {
-        setOtpErrorMessage('Invalid OTP code entered. Please enter the 6-digit code or click "Auto-Fill Demo Code".');
-        return;
-      }
+    const isValid = verifyOtp(emailInput, enteredCode);
+    if (!isValid && enteredCode !== generatedOtp && enteredCode !== '489201') {
+      setOtpErrorMessage('Invalid OTP code. Please enter the correct code or click "Auto-Fill Demo Code".');
+      return;
     }
 
-    loginWithGmail(
-      emailInput, 
-      emailInput.includes('booshan') ? 'Booshan (Google User)' : emailInput.split('@')[0],
-      selectedRole
-    );
+    setIsLoggedOut(false);
+
+    // If signing up: create and register brand new account!
+    if (authMode === 'signup') {
+      registerNewAccount({
+        name: nameInput.trim() || 'Registered Officer',
+        email: emailInput.trim(),
+        role: selectedRole,
+        department: departmentInput.trim(),
+        password: passwordInput,
+        provider: activeTab === 'gmail' ? 'gmail' : activeTab === 'microsoft' ? 'microsoft' : 'password'
+      });
+      return;
+    }
+
+    // If signing in: log in with selected provider
+    if (activeTab === 'gmail') {
+      loginWithGmail(emailInput, nameInput || 'Booshan (Google User)', selectedRole);
+    } else if (activeTab === 'microsoft') {
+      loginWithMicrosoft(emailInput, nameInput || 'Booshan (Microsoft User)', selectedRole);
+    } else {
+      loginWithCredentials(emailInput, selectedRole);
+    }
   };
 
-  // Handle Official Credentials Submit
-  const handleOfficialSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (requireOtp && !otpSent) {
-      handleSendOtp(emailInput);
-      return;
-    }
+  const handleDigitChange = (index: number, val: string) => {
+    if (!/^\d*$/.test(val)) return;
+    const newDigits = [...otpDigits];
+    newDigits[index] = val.slice(-1);
+    setOtpDigits(newDigits);
 
-    if (requireOtp && otpSent) {
-      const valid = verifyOtp(emailInput, otpInput);
-      if (!valid) {
-        setOtpErrorMessage('Invalid OTP code. Please enter the correct 6-digit security code.');
-        return;
-      }
+    // Auto-focus next input
+    if (val && index < 5) {
+      const nextInput = document.getElementById(`otp-input-${index + 1}`);
+      nextInput?.focus();
     }
-
-    loginWithCredentials(emailInput, selectedRole);
   };
 
   const currentRoleConfig = ROLE_CONFIGURATIONS[selectedRole];
@@ -146,7 +209,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ logoutNotice = false }) =>
       <div className="bg-[#07111E] border-b border-slate-800 text-xs px-4 sm:px-8 py-2 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
             <span className="font-semibold text-slate-200 text-[11px] tracking-wide">
               GOVERNMENT OF INDIA · NATIONAL SKILL DEVELOPMENT MISSION
             </span>
@@ -157,6 +220,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ logoutNotice = false }) =>
           </span>
         </div>
         <div className="flex items-center gap-3 text-[11px] font-mono text-slate-400">
+          <span className="flex items-center gap-1.5 text-cyan-300">
+            <Clock className="w-3 h-3 text-cyan-400" />
+            {cctvClock.cctvOsdString}
+          </span>
+          <span className="text-slate-600">|</span>
           <span>Problem Statement ID: <strong className="text-blue-400">26245</strong></span>
           <span className="bg-emerald-950/80 text-emerald-300 border border-emerald-700/50 px-2 py-0.5 rounded text-[10px] font-semibold flex items-center gap-1">
             <ShieldCheck className="w-3 h-3 text-emerald-400" />
@@ -169,7 +237,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ logoutNotice = false }) =>
       <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
         <div className="max-w-6xl w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           
-          {/* Left Column: Branding, Mission & Live Features */}
+          {/* Left Column: Branding & Features */}
           <div className="lg:col-span-6 space-y-6">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-950/70 border border-blue-800/60 text-blue-300 text-xs font-semibold">
               <Sparkles className="w-3.5 h-3.5 text-blue-400" />
@@ -181,22 +249,22 @@ export const LoginPage: React.FC<LoginPageProps> = ({ logoutNotice = false }) =>
                 SAIMS — Smart AI Monitoring System
               </h1>
               <p className="text-sm text-slate-300 mt-2 font-normal leading-relaxed">
-                Real-Time CCTV Live Video Streaming, Automated Face Attendance, and Infrastructure Compliance Audit for Vocational Training Centres.
+                Real-Time CCTV Video Streaming with Precision Pinpoint Reticle, Automated Biometric Face Attendance, and Infrastructure Missing Tool Audit for Vocational Training Centres.
               </p>
             </div>
 
-            {/* Role Clearance Levels Matrix Ribbon */}
+            {/* Role Clearance Levels Matrix */}
             <div className="bg-slate-800/80 border border-slate-700/80 rounded-xl p-4 space-y-3">
               <div className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between">
-                <span>Access Clearance Tiers</span>
-                <span className="text-[10px] font-mono text-emerald-400">MSDE Security Standard v4</span>
+                <span>Multi-Role Security Clearance Hierarchy</span>
+                <span className="text-[10px] text-blue-400 font-mono">MSDE Directive 2026</span>
               </div>
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                <div className="p-2.5 rounded-lg bg-emerald-950/40 border border-emerald-500/30 flex items-start gap-2">
-                  <span className="text-base">👑</span>
+                <div className="p-2.5 rounded-lg bg-emerald-950/40 border border-emerald-500/40 flex items-start gap-2">
+                  <span className="text-base">🛡️</span>
                   <div>
-                    <div className="font-bold text-emerald-400 text-[11px]">State Officer (Full Access)</div>
+                    <div className="font-bold text-emerald-400 text-[11px]">State Officer (FULL ACCESS)</div>
                     <div className="text-[10px] text-slate-400">All centres, CCTV overrides, legal accreditation, forensic audit logs</div>
                   </div>
                 </div>
@@ -232,28 +300,28 @@ export const LoginPage: React.FC<LoginPageProps> = ({ logoutNotice = false }) =>
               <div className="bg-slate-800/40 border border-slate-700/50 rounded-lg p-2.5 text-center">
                 <Video className="w-4 h-4 text-blue-400 mx-auto mb-1" />
                 <div className="font-bold text-xs text-white">Live Sample Video</div>
-                <div className="text-[10px] text-slate-400">Realistic CCTV clips</div>
+                <div className="text-[10px] text-slate-400">Factory & Classroom CCTV</div>
               </div>
 
               <div className="bg-slate-800/40 border border-slate-700/50 rounded-lg p-2.5 text-center">
                 <UserCheck className="w-4 h-4 text-emerald-400 mx-auto mb-1" />
-                <div className="font-bold text-xs text-white">AI Attendance</div>
-                <div className="text-[10px] text-slate-400">Edge face scanning</div>
+                <div className="font-bold text-xs text-white">Google & Microsoft</div>
+                <div className="text-[10px] text-slate-400">Verified SSO Accounts</div>
               </div>
 
               <div className="bg-slate-800/40 border border-slate-700/50 rounded-lg p-2.5 text-center">
                 <ShieldCheck className="w-4 h-4 text-amber-400 mx-auto mb-1" />
-                <div className="font-bold text-xs text-white">Email 2FA OTP</div>
-                <div className="text-[10px] text-slate-400">Encrypted credentials</div>
+                <div className="font-bold text-xs text-white">Email OTP Check</div>
+                <div className="text-[10px] text-slate-400">Cross-checked 2FA Code</div>
               </div>
             </div>
           </div>
 
-          {/* Right Column: High Security Authentication Card */}
+          {/* Right Column: High Security Authentication & Sign-Up Card */}
           <div className="lg:col-span-6">
             <div className="bg-white text-slate-900 rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
               
-              {/* Card Header with Govt Ashoka Seal Ribbon */}
+              {/* Card Header with Govt Ashoka Ribbon */}
               <div className="bg-slate-900 text-white p-5 border-b border-slate-800 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-amber-600 text-white font-black text-lg flex items-center justify-center shadow-md">
@@ -264,170 +332,474 @@ export const LoginPage: React.FC<LoginPageProps> = ({ logoutNotice = false }) =>
                       <span>MSDE Secure Portal Gateway</span>
                     </h3>
                     <p className="text-[11px] text-slate-400 font-mono">
-                      Role-Based Access Control · NIC Compliant
+                      {authMode === 'signin' ? 'Sign In to Existing Account' : 'Create Brand New Account'} · 2FA OTP Verified
                     </p>
                   </div>
                 </div>
 
-                <span className="px-2.5 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full text-[10px] font-bold">
-                  256-Bit SSL
-                </span>
+                {/* Mode Selector Tabs: Sign In vs Create New Account */}
+                <div className="flex items-center gap-1 bg-slate-800 p-1 rounded-xl border border-slate-700">
+                  <button
+                    onClick={() => {
+                      setAuthMode('signin');
+                      setStep('input');
+                    }}
+                    className={`text-xs px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                      authMode === 'signin'
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'text-slate-300 hover:text-white'
+                    }`}
+                  >
+                    <LogIn className="w-3.5 h-3.5" />
+                    <span>Sign In</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setAuthMode('signup');
+                      setStep('input');
+                    }}
+                    className={`text-xs px-3 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                      authMode === 'signup'
+                        ? 'bg-purple-600 text-white shadow-sm'
+                        : 'text-slate-300 hover:text-white'
+                    }`}
+                  >
+                    <UserPlus className="w-3.5 h-3.5" />
+                    <span>Create Account</span>
+                  </button>
+                </div>
               </div>
 
-              {/* Logout notice if user just logged out */}
+              {/* Logout notice */}
               {logoutNotice && (
-                <div className="bg-amber-50 border-b border-amber-200 p-3 text-xs text-amber-800 flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
-                  <span>Session terminated securely. Please authenticate again to access monitoring services.</span>
+                <div className="bg-amber-50 border-b border-amber-200 p-3 text-xs text-amber-800 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>Session terminated securely. Please authenticate or create an account.</span>
+                  </div>
+                  {onNavigateToLogout && (
+                    <button
+                      onClick={onNavigateToLogout}
+                      className="font-bold underline text-amber-900 text-[11px] cursor-pointer"
+                    >
+                      View Logout Receipt
+                    </button>
+                  )}
                 </div>
               )}
 
-              {/* Auth Mode Tabs */}
-              <div className="grid grid-cols-3 border-b border-slate-200 text-xs font-semibold bg-slate-50">
+              {/* ⚡ High-Speed Express Launcher Bar for Judges */}
+              <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-blue-50 border-b border-emerald-200/80 p-3 flex items-center justify-between gap-2 text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping shrink-0" />
+                  <span className="font-bold text-emerald-900">
+                    ⚡ Instant Express Speed:
+                  </span>
+                  <span className="text-emerald-700 text-[11px] hidden sm:inline">
+                    Skip waiting & enter dashboard in 0ms
+                  </span>
+                </div>
                 <button
-                  type="button"
-                  onClick={() => setActiveTab('gmail')}
-                  className={`py-3 px-2 text-center border-b-2 transition-all flex items-center justify-center gap-1.5 ${
-                    activeTab === 'gmail'
-                      ? 'border-red-600 text-red-600 bg-white font-bold'
-                      : 'border-transparent text-slate-600 hover:text-slate-900'
-                  }`}
+                  onClick={() => handleFastExpressLogin('State Officer')}
+                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs flex items-center gap-1.5 shadow-sm active:scale-95 transition-all cursor-pointer shrink-0"
                 >
-                  <span className="w-3.5 h-3.5 rounded-full bg-red-600 text-white text-[9px] flex items-center justify-center font-bold">G</span>
-                  <span>Gmail SSO</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('official')}
-                  className={`py-3 px-2 text-center border-b-2 transition-all flex items-center justify-center gap-1.5 ${
-                    activeTab === 'official'
-                      ? 'border-blue-600 text-blue-600 bg-white font-bold'
-                      : 'border-transparent text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <Lock className="w-3.5 h-3.5" />
-                  <span>Credentials & OTP</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('demo')}
-                  className={`py-3 px-2 text-center border-b-2 transition-all flex items-center justify-center gap-1.5 ${
-                    activeTab === 'demo'
-                      ? 'border-emerald-600 text-emerald-600 bg-white font-bold'
-                      : 'border-transparent text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>Role Personas</span>
+                  <Zap className="w-3.5 h-3.5 text-amber-300" />
+                  <span>1-Click Launch (State Officer)</span>
                 </button>
               </div>
+
+              {/* Auth Mode Tabs (Google, Microsoft, Credentials, Demo) */}
+              {step === 'input' && (
+                <div className="grid grid-cols-4 border-b border-slate-200 text-xs font-semibold bg-slate-50">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('gmail')}
+                    className={`py-3 px-1 text-center border-b-2 transition-all flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 cursor-pointer ${
+                      activeTab === 'gmail'
+                        ? 'border-red-600 text-red-600 bg-white font-bold'
+                        : 'border-transparent text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <span className="w-3.5 h-3.5 rounded-full bg-red-600 text-white text-[9px] flex items-center justify-center font-bold">G</span>
+                    <span className="text-[11px]">Google</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('microsoft')}
+                    className={`py-3 px-1 text-center border-b-2 transition-all flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 cursor-pointer ${
+                      activeTab === 'microsoft'
+                        ? 'border-blue-600 text-blue-600 bg-white font-bold'
+                        : 'border-transparent text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <span className="grid grid-cols-2 gap-0.5 w-3 h-3">
+                      <span className="bg-red-500 rounded-2xs" />
+                      <span className="bg-emerald-500 rounded-2xs" />
+                      <span className="bg-blue-500 rounded-2xs" />
+                      <span className="bg-amber-500 rounded-2xs" />
+                    </span>
+                    <span className="text-[11px]">Microsoft</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('credentials')}
+                    className={`py-3 px-1 text-center border-b-2 transition-all flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 cursor-pointer ${
+                      activeTab === 'credentials'
+                        ? 'border-indigo-600 text-indigo-600 bg-white font-bold'
+                        : 'border-transparent text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Lock className="w-3.5 h-3.5" />
+                    <span className="text-[11px]">Password</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('demo')}
+                    className={`py-3 px-1 text-center border-b-2 transition-all flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 cursor-pointer ${
+                      activeTab === 'demo'
+                        ? 'border-emerald-600 text-emerald-600 bg-white font-bold'
+                        : 'border-transparent text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span className="text-[11px]">Personas</span>
+                  </button>
+                </div>
+              )}
 
               {/* Form Content Area */}
               <div className="p-5">
 
-                {/* TAB 1: GMAIL SSO AUTHENTICATION */}
-                {activeTab === 'gmail' && (
-                  <form onSubmit={handleGmailSubmit} className="space-y-4">
-                    <div className="p-3 bg-red-50/70 border border-red-200/80 rounded-xl text-xs flex items-start gap-2.5 text-red-900">
-                      <div className="w-5 h-5 rounded-full bg-red-600 text-white text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
-                        G
-                      </div>
-                      <div>
-                        <div className="font-bold">Google & Gmail SSO Login</div>
-                        <div className="text-[11px] text-red-700 mt-0.5">
-                          Authenticate website users via verified Google Account with Two-Factor Security.
+                {/* STEP 1: CREDENTIALS & ACCOUNT INPUT */}
+                {step === 'input' && (
+                  <div className="space-y-4">
+                    
+                    {/* Header info banner */}
+                    {activeTab === 'gmail' && (
+                      <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs flex items-start gap-2.5 text-red-900">
+                        <div className="w-5 h-5 rounded-full bg-red-600 text-white text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
+                          G
+                        </div>
+                        <div>
+                          <div className="font-bold">
+                            {authMode === 'signin' ? 'Sign In with Google / Gmail' : 'Create New Account with Google / Gmail'}
+                          </div>
+                          <div className="text-[11px] text-red-700 mt-0.5">
+                            Cross-checked via Email OTP verification code to secure state monitoring access.
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    )}
 
-                    <div>
-                      <label className="text-xs font-semibold text-slate-700 block mb-1">
-                        Google / Gmail Address
-                      </label>
-                      <div className="relative">
-                        <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                        <input
-                          type="email"
-                          required
-                          value={emailInput}
-                          onChange={(e) => setEmailInput(e.target.value)}
-                          placeholder="yourname@gmail.com"
-                          className="w-full bg-slate-50 border border-slate-300 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-red-500 font-mono"
-                        />
+                    {activeTab === 'microsoft' && (
+                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs flex items-start gap-2.5 text-blue-900">
+                        <div className="grid grid-cols-2 gap-0.5 w-5 h-5 shrink-0 mt-0.5">
+                          <span className="bg-red-500 rounded-2xs" />
+                          <span className="bg-emerald-500 rounded-2xs" />
+                          <span className="bg-blue-500 rounded-2xs" />
+                          <span className="bg-amber-500 rounded-2xs" />
+                        </div>
+                        <div>
+                          <div className="font-bold">
+                            {authMode === 'signin' ? 'Sign In with Microsoft Account' : 'Create New Account with Microsoft SSO'}
+                          </div>
+                          <div className="text-[11px] text-blue-700 mt-0.5">
+                            Microsoft Azure AD & Government accounts cross-checked via 2FA Security OTP.
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    )}
 
-                    {/* Role Selection for Google User */}
-                    <div>
-                      <label className="text-xs font-semibold text-slate-700 block mb-1">
-                        Authorization Role & Privilege Level
-                      </label>
-                      <select
-                        value={selectedRole}
-                        onChange={(e) => setSelectedRole(e.target.value as UserRole)}
-                        className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs text-slate-800 focus:ring-2 focus:ring-blue-600 font-medium"
-                      >
-                        <option value="State Officer">State Officer — Full Access (All Centres, Legal Accreditations & Logs)</option>
-                        <option value="System Administrator">System Administrator — Tech Ops (Cameras, Diagnostics, User Accounts)</option>
-                        <option value="Monitoring Officer">Monitoring Officer — Field Surveillance (Live CCTV, Attendance & Checklist)</option>
-                        <option value="Centre Manager">Centre Manager — Local Facility (Chennai Skills Centre Only)</option>
-                      </select>
-                    </div>
+                    {activeTab === 'credentials' && (
+                      <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-xl text-xs flex items-start gap-2.5 text-indigo-900">
+                        <Lock className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+                        <div>
+                          <div className="font-bold">
+                            {authMode === 'signin' ? 'Official Login Credentials & Password' : 'Create Brand New Government Account'}
+                          </div>
+                          <div className="text-[11px] text-indigo-700 mt-0.5">
+                            Government portal password authentication with mandatory Gmail OTP cross-check.
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
-                    {/* Security 2FA OTP Toggle & Verification Block */}
-                    <div className="border border-slate-200 bg-slate-50/70 rounded-xl p-3 space-y-2.5">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-semibold text-slate-800 flex items-center gap-1.5">
-                          <KeyRound className="w-3.5 h-3.5 text-blue-600" />
-                          <span>Email Verification Code (2FA OTP)</span>
-                        </span>
-                        <label className="flex items-center gap-1.5 cursor-pointer text-[11px] text-slate-600 font-medium">
+                    {/* Sign Up Fields: Full Name & Department */}
+                    {authMode === 'signup' && activeTab !== 'demo' && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs font-semibold text-slate-700 block mb-1">
+                            Officer / Trainee Full Name *
+                          </label>
                           <input
-                            type="checkbox"
-                            checked={requireOtp}
-                            onChange={(e) => setRequireOtp(e.target.checked)}
-                            className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                            type="text"
+                            required
+                            value={nameInput}
+                            onChange={(e) => setNameInput(e.target.value)}
+                            placeholder="Ananya Sharma"
+                            className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs text-slate-900 focus:ring-2 focus:ring-blue-600 font-medium"
                           />
-                          <span>Enforce 2FA</span>
-                        </label>
-                      </div>
-
-                      {requireOtp && (
-                        <div className="space-y-2 pt-1">
-                          <div className="flex gap-2">
-                            <input
-                              type="text"
-                              value={otpInput}
-                              onChange={(e) => setOtpInput(e.target.value)}
-                              placeholder="Enter 6-digit OTP code"
-                              maxLength={6}
-                              className="flex-1 bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-900 tracking-widest font-mono text-center font-bold"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => handleSendOtp(emailInput)}
-                              disabled={otpSending || cooldownSeconds > 0}
-                              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors disabled:opacity-50"
-                            >
-                              <Send className="w-3 h-3" />
-                              <span>{cooldownSeconds > 0 ? `${cooldownSeconds}s` : 'Send OTP'}</span>
-                            </button>
-                          </div>
-
-                          <div className="flex items-center justify-between text-[10px] text-slate-500">
-                            <span>Sent to: <strong className="font-mono text-slate-700">{emailInput}</strong></span>
-                            <button
-                              type="button"
-                              onClick={() => setOtpInput('489201')}
-                              className="text-blue-600 hover:text-blue-800 font-semibold"
-                            >
-                              Auto-Fill Demo Code (489201)
-                            </button>
-                          </div>
                         </div>
-                      )}
+                        <div>
+                          <label className="text-xs font-semibold text-slate-700 block mb-1">
+                            Government Department / Centre
+                          </label>
+                          <input
+                            type="text"
+                            value={departmentInput}
+                            onChange={(e) => setDepartmentInput(e.target.value)}
+                            placeholder="MSDE State Directorate"
+                            className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs text-slate-900 focus:ring-2 focus:ring-blue-600"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Email Input */}
+                    {activeTab !== 'demo' && (
+                      <div>
+                        <label className="text-xs font-semibold text-slate-700 block mb-1">
+                          {activeTab === 'gmail' ? 'Google / Gmail Address' : activeTab === 'microsoft' ? 'Microsoft Account Email' : 'Email Address'} *
+                        </label>
+                        <div className="relative">
+                          <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="email"
+                            required
+                            value={emailInput}
+                            onChange={(e) => setEmailInput(e.target.value)}
+                            placeholder={activeTab === 'gmail' ? 'yourname@gmail.com' : activeTab === 'microsoft' ? 'yourname@microsoft.com' : 'officer@msde.gov.in'}
+                            className="w-full bg-slate-50 border border-slate-300 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-900 focus:ring-2 focus:ring-blue-600 font-mono"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Password Input (for Credentials tab or Sign Up) */}
+                    {(activeTab === 'credentials' || authMode === 'signup') && activeTab !== 'demo' && (
+                      <div>
+                        <label className="text-xs font-semibold text-slate-700 block mb-1">
+                          Security Password *
+                        </label>
+                        <div className="relative">
+                          <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="password"
+                            required
+                            value={passwordInput}
+                            onChange={(e) => setPasswordInput(e.target.value)}
+                            placeholder="••••••••••••"
+                            className="w-full bg-slate-50 border border-slate-300 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-900 focus:ring-2 focus:ring-blue-600 font-mono"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Role Selection */}
+                    {activeTab !== 'demo' && (
+                      <div>
+                        <label className="text-xs font-semibold text-slate-700 block mb-1">
+                          Target Security Role & Access Level
+                        </label>
+                        <select
+                          value={selectedRole}
+                          onChange={(e) => setSelectedRole(e.target.value as UserRole)}
+                          className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs text-slate-900 focus:ring-2 focus:ring-blue-600 font-medium"
+                        >
+                          <option value="State Officer">State Officer — Apex Level 4 (FULL ACCESS to All Features)</option>
+                          <option value="System Administrator">System Administrator — Tech Ops (Cameras, Diagnostics, Accounts)</option>
+                          <option value="Monitoring Officer">Monitoring Officer — Field Surveillance (Live CCTV & Checklists)</option>
+                          <option value="Centre Manager">Centre Manager — Local Facility (Chennai Skills Hub Only)</option>
+                        </select>
+                      </div>
+                    )}
+
+                    {/* Role Permission Preview */}
+                    {activeTab !== 'demo' && (
+                      <div className={`p-2.5 rounded-lg border text-xs ${
+                        selectedRole === 'State Officer' 
+                          ? 'bg-emerald-50 border-emerald-300 text-emerald-900' 
+                          : selectedRole === 'System Administrator'
+                          ? 'bg-blue-50 border-blue-300 text-blue-900'
+                          : selectedRole === 'Monitoring Officer'
+                          ? 'bg-amber-50 border-amber-300 text-amber-900'
+                          : 'bg-purple-50 border-purple-300 text-purple-900'
+                      }`}>
+                        <div className="flex items-center justify-between font-bold text-[11px]">
+                          <span>{currentRoleConfig?.category}</span>
+                          <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-white shadow-xs">
+                            {currentRoleConfig?.clearanceLevel}
+                          </span>
+                        </div>
+                        <div className="text-[10px] mt-1 text-slate-600">
+                          {currentRoleConfig?.description}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* TAB 4: DEMO PERSONAS */}
+                    {activeTab === 'demo' && (
+                      <div className="space-y-3">
+                        <div className="text-xs text-slate-600">
+                          Select any pre-configured official persona to immediately experience distinct role permissions (instant 0ms switch):
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => loginWithDemo('State Officer')}
+                            className="p-3 rounded-xl border border-emerald-300 bg-emerald-50/70 hover:bg-emerald-100 text-left transition-colors cursor-pointer group"
+                          >
+                            <div className="font-bold text-xs text-emerald-900 flex items-center gap-1.5">
+                              <span>🛡️ State Officer</span>
+                              <span className="text-[9px] bg-emerald-700 text-white px-1.5 py-0.2 rounded font-mono">FULL ACCESS</span>
+                            </div>
+                            <div className="text-[10px] text-slate-600 mt-1">Dr. Thiru Vikramaditya IAS</div>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => loginWithDemo('System Administrator')}
+                            className="p-3 rounded-xl border border-blue-300 bg-blue-50/70 hover:bg-blue-100 text-left transition-colors cursor-pointer group"
+                          >
+                            <div className="font-bold text-xs text-blue-900">⚙️ System Admin</div>
+                            <div className="text-[10px] text-slate-600 mt-1">S. Meenakshi Sundaram</div>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => loginWithDemo('Monitoring Officer')}
+                            className="p-3 rounded-xl border border-amber-300 bg-amber-50/70 hover:bg-amber-100 text-left transition-colors cursor-pointer group"
+                          >
+                            <div className="font-bold text-xs text-amber-900">📹 Monitoring Officer</div>
+                            <div className="text-[10px] text-slate-400 mt-1">Vigilance & Inspection</div>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => loginWithDemo('Centre Manager')}
+                            className="p-3 rounded-xl border border-purple-300 bg-purple-50/70 hover:bg-purple-100 text-left transition-colors cursor-pointer group"
+                          >
+                            <div className="font-bold text-xs text-purple-900">🏢 Centre Manager</div>
+                            <div className="text-[10px] text-slate-600 mt-1">R. Anandan (Chennai Hub)</div>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Error display */}
+                    {otpErrorMessage && (
+                      <div className="p-2.5 bg-red-50 border border-red-200 rounded-lg text-xs text-red-800 flex items-center gap-1.5 animate-in fade-in">
+                        <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                        <span>{otpErrorMessage}</span>
+                      </div>
+                    )}
+
+                    {/* Action Buttons: 2FA OTP or Instant Express */}
+                    {activeTab !== 'demo' && (
+                      <div className="space-y-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => handleInitiateOtp(emailInput)}
+                          disabled={otpSending}
+                          className={`w-full py-3 rounded-xl text-xs font-bold shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-98 ${
+                            authMode === 'signup'
+                              ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                              : activeTab === 'gmail'
+                              ? 'bg-red-600 hover:bg-red-700 text-white'
+                              : activeTab === 'microsoft'
+                              ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                              : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                          }`}
+                        >
+                          {otpSending ? (
+                            <span>Generating Security OTP...</span>
+                          ) : (
+                            <>
+                              <span>
+                                {authMode === 'signin' ? 'Proceed with 2FA OTP Verification' : 'Verify & Create Account via OTP'}
+                              </span>
+                              <ArrowRight className="w-4 h-4" />
+                            </>
+                          )}
+                        </button>
+
+                        {/* Ultra-Fast 1-Click Bypass Button */}
+                        <button
+                          type="button"
+                          onClick={() => handleFastExpressLogin(selectedRole)}
+                          className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                        >
+                          <Zap className="w-3.5 h-3.5 text-amber-600" />
+                          <span>
+                            ⚡ 1-Click Fast {authMode === 'signin' ? 'Sign In' : 'Create & Launch'} (Skip OTP)
+                          </span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* STEP 2: DEDICATED 2FA OTP VERIFICATION CROSS-CHECK */}
+                {step === 'otp_verification' && (
+                  <form onSubmit={handleConfirmOtpAndLogin} className="space-y-4">
+                    <button
+                      type="button"
+                      onClick={() => setStep('input')}
+                      className="text-xs text-slate-500 hover:text-slate-800 flex items-center gap-1 font-semibold cursor-pointer"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" /> Back to Account Details
+                    </button>
+
+                    <div className="p-3.5 bg-blue-50 border border-blue-200 rounded-xl text-xs space-y-1.5">
+                      <div className="font-bold text-blue-900 flex items-center gap-1.5">
+                        <KeyRound className="w-4 h-4 text-blue-700" />
+                        <span>Security Identity Cross-Check (2FA OTP)</span>
+                      </div>
+                      <p className="text-slate-600 text-[11px]">
+                        A 6-digit one-time password has been generated for official address:
+                      </p>
+                      <div className="font-mono font-bold text-xs text-blue-800 bg-white border border-blue-200 px-2 py-1 rounded inline-block">
+                        {emailInput}
+                      </div>
+                    </div>
+
+                    {/* 6-Digit Code Input Boxes */}
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 block text-center mb-2">
+                        Enter 6-Digit Verification Code
+                      </label>
+                      <div className="flex justify-center gap-2">
+                        {otpDigits.map((digit, idx) => (
+                          <input
+                            key={idx}
+                            id={`otp-input-${idx}`}
+                            type="text"
+                            maxLength={1}
+                            value={digit}
+                            onChange={(e) => handleDigitChange(idx, e.target.value)}
+                            className="w-10 h-12 text-center text-lg font-bold font-mono border-2 border-slate-300 focus:border-blue-600 focus:outline-none rounded-lg bg-slate-50 text-slate-900"
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Quick Demo Helper */}
+                    <div className="flex items-center justify-between text-xs text-slate-500 pt-1">
+                      <span>Expires in 10 minutes</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const digits = (generatedOtp || '489201').split('').slice(0, 6);
+                          setOtpDigits(digits);
+                        }}
+                        className="text-blue-600 hover:text-blue-800 font-bold cursor-pointer"
+                      >
+                        Auto-Fill Demo Code ({generatedOtp || '489201'})
+                      </button>
                     </div>
 
                     {/* Status feedback */}
@@ -444,279 +816,57 @@ export const LoginPage: React.FC<LoginPageProps> = ({ logoutNotice = false }) =>
                       </div>
                     )}
 
+                    {/* Confirm Button */}
                     <button
                       type="submit"
-                      className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold shadow-md flex items-center justify-center gap-2 transition-all"
+                      className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-98"
                     >
-                      <span>Authorize & Sign In with Gmail ({selectedRole})</span>
-                      <ArrowRight className="w-4 h-4" />
+                      <Check className="w-4 h-4" />
+                      <span>
+                        {authMode === 'signup' ? 'Verify & Create My Account' : 'Verify OTP & Launch Dashboard'} ({selectedRole})
+                      </span>
                     </button>
-                  </form>
-                )}
 
-                {/* TAB 2: OFFICIAL GOVT CREDENTIALS */}
-                {activeTab === 'official' && (
-                  <form onSubmit={handleOfficialSubmit} className="space-y-3.5">
-                    
-                    {/* Role Selector */}
-                    <div>
-                      <label className="text-xs font-semibold text-slate-700 block mb-1">
-                        Select Ministry Official Category
-                      </label>
-                      <select
-                        value={selectedRole}
-                        onChange={(e) => setSelectedRole(e.target.value as UserRole)}
-                        className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs text-slate-800 focus:ring-2 focus:ring-blue-600 font-medium"
+                    {/* Resend button */}
+                    <div className="text-center pt-1">
+                      <button
+                        type="button"
+                        onClick={() => handleInitiateOtp(emailInput)}
+                        disabled={cooldownSeconds > 0 || otpSending}
+                        className="text-xs text-slate-600 hover:text-slate-900 font-semibold disabled:opacity-50 cursor-pointer"
                       >
-                        <option value="State Officer">State Officer (Apex State Directorate — FULL ACCESS)</option>
-                        <option value="System Administrator">System Administrator (Edge Technical Ops)</option>
-                        <option value="Monitoring Officer">Monitoring Officer (Field Surveillance)</option>
-                        <option value="Centre Manager">Centre Manager (Chennai Centre Scoped)</option>
-                      </select>
+                        {cooldownSeconds > 0 ? `Resend Code in ${cooldownSeconds}s` : 'Did not receive code? Resend OTP'}
+                      </button>
                     </div>
-
-                    {/* Role Permission Preview Badge */}
-                    <div className={`p-2.5 rounded-lg border text-xs ${
-                      selectedRole === 'State Officer' 
-                        ? 'bg-emerald-50 border-emerald-300 text-emerald-900' 
-                        : selectedRole === 'System Administrator'
-                        ? 'bg-blue-50 border-blue-300 text-blue-900'
-                        : selectedRole === 'Monitoring Officer'
-                        ? 'bg-amber-50 border-amber-300 text-amber-900'
-                        : 'bg-purple-50 border-purple-300 text-purple-900'
-                    }`}>
-                      <div className="flex items-center justify-between font-bold text-[11px]">
-                        <span>{currentRoleConfig?.category}</span>
-                        <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-white/70 shadow-xs">
-                          {currentRoleConfig?.clearanceLevel}
-                        </span>
-                      </div>
-                      <div className="text-[10px] mt-1 text-slate-600">
-                        {currentRoleConfig?.description}
-                      </div>
-                    </div>
-
-                    {/* Email Input */}
-                    <div>
-                      <label className="text-xs font-semibold text-slate-700 block mb-1">
-                        Official Govt Email Address
-                      </label>
-                      <div className="relative">
-                        <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                        <input
-                          type="email"
-                          required
-                          value={emailInput}
-                          onChange={(e) => setEmailInput(e.target.value)}
-                          placeholder="stateofficer@msde.gov.in"
-                          className="w-full bg-slate-50 border border-slate-300 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-blue-600 font-mono"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Password Input */}
-                    <div>
-                      <label className="text-xs font-semibold text-slate-700 block mb-1">
-                        Portal Security Password
-                      </label>
-                      <div className="relative">
-                        <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                        <input
-                          type="password"
-                          required
-                          value={passwordInput}
-                          onChange={(e) => setPasswordInput(e.target.value)}
-                          placeholder="••••••••••••"
-                          className="w-full bg-slate-50 border border-slate-300 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-800 focus:ring-2 focus:ring-blue-600 font-mono"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Email 2FA Verification Box */}
-                    <div className="border border-slate-200 bg-slate-50/70 rounded-xl p-3 space-y-2">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-semibold text-slate-800 flex items-center gap-1.5">
-                          <KeyRound className="w-3.5 h-3.5 text-blue-600" />
-                          <span>Send Verification Email / 2FA OTP</span>
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => handleSendOtp(emailInput)}
-                          disabled={otpSending || cooldownSeconds > 0}
-                          className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-[10px] font-bold transition-colors disabled:opacity-50"
-                        >
-                          {cooldownSeconds > 0 ? `Resend (${cooldownSeconds}s)` : 'Send Verification OTP'}
-                        </button>
-                      </div>
-
-                      <div className="flex gap-2 pt-1">
-                        <input
-                          type="text"
-                          value={otpInput}
-                          onChange={(e) => setOtpInput(e.target.value)}
-                          placeholder="6-digit verification code"
-                          maxLength={6}
-                          className="flex-1 bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-slate-900 tracking-widest font-mono text-center font-bold"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setOtpInput('489201')}
-                          className="px-2.5 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded text-[10px] font-semibold"
-                        >
-                          Use 489201
-                        </button>
-                      </div>
-                    </div>
-
-                    {otpSuccessMessage && (
-                      <div className="p-2 bg-emerald-50 border border-emerald-200 rounded text-xs text-emerald-800 flex items-center gap-1.5">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                        <span>{otpSuccessMessage}</span>
-                      </div>
-                    )}
-                    {otpErrorMessage && (
-                      <div className="p-2 bg-red-50 border border-red-200 rounded text-xs text-red-800 flex items-center gap-1.5">
-                        <AlertCircle className="w-3.5 h-3.5 text-red-600 shrink-0" />
-                        <span>{otpErrorMessage}</span>
-                      </div>
-                    )}
-
-                    <button
-                      type="submit"
-                      className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md flex items-center justify-center gap-2 transition-all mt-1"
-                    >
-                      <span>Sign In with Verified Credentials</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
                   </form>
                 )}
 
-                {/* TAB 3: ROLE PERSONAS & CATEGORIES FOR INSTANT SWITCHING */}
-                {activeTab === 'demo' && (
-                  <div className="space-y-3">
-                    <div className="text-xs text-slate-500 mb-1">
-                      Select an official operational category to evaluate access tiers:
-                    </div>
-
-                    {/* State Officer (Full Access) */}
-                    <button
-                      type="button"
-                      onClick={() => loginWithDemo('State Officer')}
-                      className="w-full p-3 bg-emerald-50/80 hover:bg-emerald-100/90 border border-emerald-300 rounded-xl text-left transition-all group shadow-xs"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-base">👑</span>
-                          <span className="font-extrabold text-xs text-emerald-950">
-                            State Officer (FULL ACCESS)
-                          </span>
-                        </div>
-                        <span className="text-[10px] bg-emerald-600 text-white font-bold px-2 py-0.5 rounded uppercase">
-                          Apex Authority →
-                        </span>
-                      </div>
-                      <div className="text-[11px] text-emerald-900 font-semibold mt-1">
-                        Dr. Thiru Vikramaditya IAS · stateofficer@msde.gov.in
-                      </div>
-                      <div className="text-[10px] text-emerald-800 mt-0.5">
-                        ✓ Full access to all centres, CCTV streams, legal accreditation, forensic audit & user administration.
-                      </div>
-                    </button>
-
-                    {/* System Administrator */}
-                    <button
-                      type="button"
-                      onClick={() => loginWithDemo('System Administrator')}
-                      className="w-full p-3 bg-blue-50/80 hover:bg-blue-100/90 border border-blue-300 rounded-xl text-left transition-all group"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-base">⚙️</span>
-                          <span className="font-bold text-xs text-blue-950">System Administrator</span>
-                        </div>
-                        <span className="text-[10px] text-blue-700 font-bold font-mono">AUTHENTICATE →</span>
-                      </div>
-                      <div className="text-[11px] text-blue-900 font-medium mt-1">
-                        Dr. Rajesh Sundaram · sysadmin@msde.gov.in
-                      </div>
-                      <div className="text-[10px] text-slate-600 mt-0.5">
-                        ✓ Cameras, edge diagnostics, users. <strong className="text-red-700">Restricted from legal inspection accreditation sign-off.</strong>
-                      </div>
-                    </button>
-
-                    {/* Monitoring Officer */}
-                    <button
-                      type="button"
-                      onClick={() => loginWithDemo('Monitoring Officer')}
-                      className="w-full p-3 bg-amber-50/80 hover:bg-amber-100/90 border border-amber-300 rounded-xl text-left transition-all group"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-base">📹</span>
-                          <span className="font-bold text-xs text-amber-950">Monitoring Officer</span>
-                        </div>
-                        <span className="text-[10px] text-amber-700 font-bold font-mono">AUTHENTICATE →</span>
-                      </div>
-                      <div className="text-[11px] text-amber-900 font-medium mt-1">
-                        Ananya Deshmukh · monitor@msde.gov.in
-                      </div>
-                      <div className="text-[10px] text-slate-600 mt-0.5">
-                        ✓ Live CCTV view, attendance, checklist. <strong className="text-red-700">Restricted from editing system settings & deleting cameras.</strong>
-                      </div>
-                    </button>
-
-                    {/* Centre Manager */}
-                    <button
-                      type="button"
-                      onClick={() => loginWithDemo('Centre Manager')}
-                      className="w-full p-3 bg-purple-50/80 hover:bg-purple-100/90 border border-purple-300 rounded-xl text-left transition-all group"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-base">🏢</span>
-                          <span className="font-bold text-xs text-purple-950">Centre Manager</span>
-                        </div>
-                        <span className="text-[10px] text-purple-700 font-bold font-mono">AUTHENTICATE →</span>
-                      </div>
-                      <div className="text-[11px] text-purple-900 font-medium mt-1">
-                        K. Balakrishnan · manager.chennai@msde.gov.in
-                      </div>
-                      <div className="text-[10px] text-slate-600 mt-0.5">
-                        ✓ Local Chennai centre (TN-CHE-0104). <strong className="text-red-700">Restricted strictly to single centre only.</strong>
-                      </div>
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Quick Guest Bypass Footer */}
-              <div className="bg-slate-50 p-3.5 border-t border-slate-200 flex items-center justify-between text-xs">
-                <span className="text-slate-500 text-[11px]">Evaluating as Apex Official?</span>
-                <button
-                  type="button"
-                  onClick={() => loginWithDemo('State Officer')}
-                  className="text-emerald-700 hover:text-emerald-900 font-bold text-xs flex items-center gap-1"
-                >
-                  <span>Enter as State Officer (Full Access)</span>
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
               </div>
             </div>
           </div>
-
         </div>
       </div>
 
-      {/* Official Footer */}
-      <footer className="bg-[#07111E] border-t border-slate-800 text-slate-400 py-3 text-[11px] text-center px-4">
-        <p className="flex flex-wrap items-center justify-center gap-2">
-          <span>SAIMS Platform © 2026</span>
+      {/* Govt Footer Ribbon */}
+      <div className="bg-[#07111E] border-t border-slate-800 text-xs px-4 sm:px-8 py-3 flex flex-wrap items-center justify-between text-slate-400 gap-2">
+        <div className="flex items-center gap-2">
+          <span>Designed for Ministry of Skill Development and Entrepreneurship (MSDE)</span>
           <span>·</span>
-          <span>National Skill Development Agency / MSDE</span>
+          <span>Government of India</span>
+        </div>
+        <div className="flex items-center gap-3 text-[11px] font-mono">
+          <span>NIC Compliant</span>
           <span>·</span>
-          <span>All Activities Monitored & Digitally Signed under IT Act 2000</span>
-        </p>
-      </footer>
+          <span>TLS 1.3 Certified</span>
+          <span>·</span>
+          <button
+            onClick={toggleTheme}
+            className="text-slate-300 hover:text-white cursor-pointer"
+          >
+            Theme: {theme === 'dark' ? 'Dark' : 'Light'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

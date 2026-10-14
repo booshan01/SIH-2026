@@ -19,6 +19,7 @@ import {
   EquipmentCategory,
   Student,
   ClassroomChecklistItem,
+  PinpointTarget,
 } from '../types';
 import {
   initialUsers,
@@ -46,6 +47,7 @@ interface AppContextType {
   showAuthModal: boolean;
   setShowAuthModal: (open: boolean) => void;
   loginWithGmail: (email?: string, name?: string, role?: UserRole) => void;
+  loginWithMicrosoft: (email?: string, name?: string, role?: UserRole) => void;
   loginWithCredentials: (email: string, role?: UserRole) => void;
   loginWithDemo: (role: UserRole) => void;
   logout: () => void;
@@ -53,7 +55,27 @@ interface AppContextType {
   sendVerificationOtp: (email: string) => Promise<{ success: boolean; otp: string; message: string }>;
   verifyOtp: (email: string, code: string) => boolean;
   activeOtp: { email: string; code: string; expiresAt: number } | null;
+  registerNewAccount: (userData: {
+    name: string;
+    email: string;
+    role: UserRole;
+    department?: string;
+    password?: string;
+    provider?: AuthProvider;
+  }) => User;
+  isLoggedOut: boolean;
+  setIsLoggedOut: (loggedOut: boolean) => void;
   signAccreditation: (centreId: string, grade: string, remarks: string) => void;
+  geminiAssistantOpen: boolean;
+  setGeminiAssistantOpen: (open: boolean) => void;
+  pinpointTarget: PinpointTarget | null;
+  setPinpointTarget: (target: PinpointTarget | null) => void;
+  triggerPinpoint: (target: PinpointTarget) => void;
+
+  // Theme management (Dark & Light Mode)
+  theme: 'light' | 'dark' | 'system';
+  setTheme: (theme: 'light' | 'dark' | 'system') => void;
+  toggleTheme: () => void;
 
   activePage: string;
   setActivePage: (page: string) => void;
@@ -151,16 +173,69 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [currentUser, setCurrentUser] = useState<User>(() => loadFromStorage('currentUser', initialUsers[0]));
   const [authProvider, setAuthProvider] = useState<AuthProvider>(() => loadFromStorage('authProvider', 'gmail'));
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
+  const [isLoggedOut, setIsLoggedOut] = useState<boolean>(false);
   const [activeOtp, setActiveOtp] = useState<{ email: string; code: string; expiresAt: number } | null>(null);
+  const [geminiAssistantOpen, setGeminiAssistantOpen] = useState<boolean>(false);
+  const [pinpointTarget, setPinpointTarget] = useState<PinpointTarget | null>(null);
+
+  const triggerPinpoint = (target: PinpointTarget) => {
+    setPinpointTarget(target);
+    setActivePage('monitoring');
+  };
+  const [theme, setThemeState] = useState<'light' | 'dark' | 'system'>(() => loadFromStorage('theme', 'light'));
+
+  const setTheme = (newTheme: 'light' | 'dark' | 'system') => {
+    setThemeState(newTheme);
+    saveToStorage('theme', newTheme);
+    setSettings(prev => ({
+      ...prev,
+      general: {
+        ...prev.general,
+        theme: newTheme
+      }
+    }));
+  };
+
+  const toggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+  };
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else if (theme === 'light') {
+      root.classList.remove('dark');
+    } else {
+      const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (isDark) root.classList.add('dark');
+      else root.classList.remove('dark');
+    }
+  }, [theme]);
 
   const [activePage, setActivePage] = useState<string>('dashboard');
   const [selectedCentreId, setSelectedCentreId] = useState<string | null>(null);
   const [globalSearch, setGlobalSearch] = useState<string>('');
 
   // Persistent Collections
-  const [centres, setCentres] = useState<TrainingCentre[]>(() => loadFromStorage('centres', initialCentres));
+  const [centres, setCentres] = useState<TrainingCentre[]>(() => {
+    const loaded = loadFromStorage<TrainingCentre[]>('centres', initialCentres);
+    if (!loaded || loaded.length < 9) {
+      saveToStorage('centres', initialCentres);
+      return initialCentres;
+    }
+    return loaded;
+  });
   const [classrooms, setClassrooms] = useState<Classroom[]>(() => loadFromStorage('classrooms', initialClassrooms));
-  const [cameras, setCameras] = useState<Camera[]>(() => loadFromStorage('cameras', initialCameras));
+  const [cameras, setCameras] = useState<Camera[]>(() => {
+    const loaded = loadFromStorage<Camera[]>('cameras', initialCameras);
+    if (!loaded || loaded.length < 18) {
+      saveToStorage('cameras', initialCameras);
+      return initialCameras;
+    }
+    return loaded;
+  });
   const [inventory, setInventory] = useState<InventoryItem[]>(() => loadFromStorage('inventory', initialInventory));
   const [attendance, setAttendance] = useState<AttendanceRecord[]>(() => loadFromStorage('attendance', initialAttendance));
   const [alerts, setAlerts] = useState<Alert[]>(() => loadFromStorage('alerts', initialAlerts));
@@ -277,6 +352,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
+  // Microsoft Account Authentication
+  const loginWithMicrosoft = (
+    email: string = 'booshan.officer@microsoft.com', 
+    name: string = 'Booshan (Microsoft User)', 
+    role: UserRole = 'State Officer'
+  ) => {
+    const msUser: User = {
+      id: `user-ms-${Date.now()}`,
+      name,
+      email,
+      role,
+      department: 'Microsoft Azure Government Skills Oversight Unit',
+      provider: 'microsoft',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=256',
+      isEmailVerified: true,
+      twoFactorEnabled: true,
+      clearanceLevel: role === 'State Officer' ? 'Level 4 (Apex Full)' : role === 'System Administrator' ? 'Level 3 (Tech Ops)' : role === 'Monitoring Officer' ? 'Level 2 (Field Surveillance)' : 'Level 1 (Facility Scoped)'
+    };
+    setCurrentUser(msUser);
+    setIsAuthenticated(true);
+    setAuthProvider('microsoft');
+    setShowAuthModal(false);
+
+    addAuditLogInternal({
+      actor: name,
+      actorRole: role,
+      action: 'LOGIN_MICROSOFT_OAUTH',
+      targetType: 'User',
+      targetId: msUser.id,
+      targetName: email,
+      details: `Authenticated via Microsoft Account SSO (${email}) with role: ${role}.`,
+    });
+  };
+
   // Standard Password / Email Authentication
   const loginWithCredentials = (email: string, role: UserRole = 'State Officer') => {
     const matchedUser = initialUsers.find(u => u.email.toLowerCase() === email.toLowerCase()) ||
@@ -363,6 +472,59 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setNotifications(prev => [notif, ...prev]);
   };
 
+  // Register Brand New User Account
+  const registerNewAccount = (userData: {
+    name: string;
+    email: string;
+    role: UserRole;
+    department?: string;
+    password?: string;
+    provider?: AuthProvider;
+  }): User => {
+    const newUser: User = {
+      id: `user-reg-${Date.now()}`,
+      name: userData.name.trim() || 'New Officer',
+      email: userData.email.trim(),
+      role: userData.role,
+      department: userData.department?.trim() || 'MSDE Vocational Directorate',
+      provider: userData.provider || 'password',
+      isEmailVerified: true,
+      twoFactorEnabled: true,
+      clearanceLevel: userData.role === 'State Officer' ? 'Level 4 (Apex Full)' : userData.role === 'System Administrator' ? 'Level 3 (Tech Ops)' : userData.role === 'Monitoring Officer' ? 'Level 2 (Field Surveillance)' : 'Level 1 (Facility Scoped)'
+    };
+
+    setCurrentUser(newUser);
+    setIsAuthenticated(true);
+    setIsLoggedOut(false);
+    setShowAuthModal(false);
+    if (userData.provider) {
+      setAuthProvider(userData.provider);
+    }
+
+    addAuditLogInternal({
+      actor: newUser.name,
+      actorRole: newUser.role,
+      action: 'ACCOUNT_CREATED',
+      targetType: 'User',
+      targetId: newUser.id,
+      targetName: newUser.email,
+      details: `New account registered successfully with role: ${newUser.role} and email: ${newUser.email}.`,
+    });
+
+    const notif: AppNotification = {
+      id: `notif-user-reg-${Date.now()}`,
+      type: 'system',
+      title: '🎉 Welcome to SAIMS',
+      message: `Account created for ${newUser.name} with clearance ${newUser.clearanceLevel}.`,
+      severity: 'low',
+      timestamp: new Date().toISOString(),
+      read: false
+    };
+    setNotifications(prev => [notif, ...prev]);
+
+    return newUser;
+  };
+
   // Logout
   const logout = () => {
     addAuditLogInternal({
@@ -375,7 +537,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       details: `User logged out of SAIMS console.`,
     });
     setIsAuthenticated(false);
-    setShowAuthModal(true);
+    setIsLoggedOut(true);
+    setShowAuthModal(false);
   };
 
   // Switch Role
@@ -872,14 +1035,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         showAuthModal,
         setShowAuthModal,
         loginWithGmail,
+        loginWithMicrosoft,
         loginWithCredentials,
         loginWithDemo,
         logout,
+        registerNewAccount,
+        isLoggedOut,
+        setIsLoggedOut,
         switchUserRole,
         sendVerificationOtp,
         verifyOtp,
         activeOtp,
         signAccreditation,
+        geminiAssistantOpen,
+        setGeminiAssistantOpen,
+        pinpointTarget,
+        setPinpointTarget,
+        triggerPinpoint,
+
+        theme,
+        setTheme,
+        toggleTheme,
 
         activePage,
         setActivePage,
